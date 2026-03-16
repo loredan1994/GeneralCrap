@@ -1,0 +1,40 @@
+// Parse Azure Functions execution summary messages to show invocations,
+// failure rate, duration, and billed size by function.
+
+let Lookback = 7d;
+let TopN = 30;
+let TargetAppName = "";
+let TargetFunctionName = "";
+FunctionAppLogs
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where Category startswith "Function."
+| where Message startswith "Executed "
+| extend ParsedFunctionName = coalesce(extract(@"Executed '([^']+)'", 1, Message), FunctionName)
+| extend Result = tostring(extract(@"\(([^,]+),", 1, Message))
+| extend ParsedInvocationId = coalesce(extract(@"Id=([^,)\s]+)", 1, Message), FunctionInvocationId)
+| extend DurationMs = tolong(extract(@"Duration=([0-9]+)ms", 1, Message))
+| where isempty(TargetAppName) or AppName =~ TargetAppName
+| where isempty(TargetFunctionName) or ParsedFunctionName =~ TargetFunctionName
+| summarize
+    Invocations = count(),
+    Successes = countif(Result startswith "Succeeded"),
+    Failures = countif(Result !startswith "Succeeded"),
+    DistinctInvocationIds = dcount(ParsedInvocationId),
+    GB = sum(_BilledSize) / 1e9,
+    AvgDurationMs = avg(DurationMs),
+    P95DurationMs = percentile(DurationMs, 95)
+  by AppName, FunctionName = ParsedFunctionName
+| extend FailurePct = iff(Invocations == 0, 0.0, round(100.0 * Failures / Invocations, 2))
+| top TopN by GB desc
+| project
+    AppName,
+    FunctionName,
+    Invocations,
+    Successes,
+    Failures,
+    FailurePct,
+    DistinctInvocationIds,
+    GB = round(GB, 3),
+    AvgDurationMs = round(AvgDurationMs, 1),
+    P95DurationMs = round(P95DurationMs, 1)

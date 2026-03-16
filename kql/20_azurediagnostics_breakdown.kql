@@ -1,0 +1,33 @@
+// Rank AzureDiagnostics records by the dimensions that usually explain cost.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetProvider = "";
+let TargetCategory = "";
+let TargetResourceId = "";
+AzureDiagnostics
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| extend ResourceProviderName = tostring(column_ifexists("ResourceProvider", ""))
+| extend ResourceTypeName = tostring(column_ifexists("ResourceType", ""))
+| extend CategoryName = tostring(column_ifexists("Category", ""))
+| extend OperationNameValue = tostring(column_ifexists("OperationName", ""))
+| extend ResourceIdValue = tostring(coalesce(column_ifexists("ResourceId", ""), column_ifexists("_ResourceId", "")))
+| where isempty(TargetProvider) or ResourceProviderName =~ TargetProvider
+| where isempty(TargetCategory) or CategoryName =~ TargetCategory
+| where isempty(TargetResourceId) or ResourceIdValue =~ TargetResourceId
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0
+  by ResourceProvider = ResourceProviderName, ResourceType = ResourceTypeName, Category = CategoryName, OperationName = OperationNameValue, ResourceId = ResourceIdValue
+| top TopN by GB desc
+| project
+    ResourceProvider,
+    ResourceType,
+    Category,
+    OperationName,
+    ResourceId,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2)

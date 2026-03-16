@@ -1,0 +1,49 @@
+// Aggregate recent billable data by Azure resource across all tables.
+// Use this when the same resource appears hot in multiple tables or when you
+// want to pivot from a table problem to a resource problem.
+
+let Lookback = 1d;
+let TopN = 25;
+let Raw =
+    find where TimeGenerated >= ago(Lookback)
+    | project
+        TableName = tostring(Type),
+        ResourceId = tostring(column_ifexists("_ResourceId", "")),
+        BilledSize = toreal(column_ifexists("_BilledSize", 0.0)),
+        IsBillable = tolower(tostring(column_ifexists("_IsBillable", "true")))
+    | where TableName != "Usage"
+    | where IsBillable == "true"
+    | where BilledSize > 0
+    | where isnotempty(ResourceId);
+let ByResourceTable =
+    Raw
+    | summarize TableGB = sum(BilledSize) / 1e9, TableRows = count() by ResourceId, TableName;
+let DominantTableByResource =
+    ByResourceTable
+    | summarize arg_max(TableGB, TableName) by ResourceId
+    | project ResourceId, DominantTable = TableName, DominantTableGB = round(TableGB, 3);
+ByResourceTable
+| summarize
+    TotalGB = sum(TableGB),
+    TotalRows = sum(TableRows),
+    DistinctTables = dcount(TableName)
+  by ResourceId
+| join kind=leftouter DominantTableByResource on ResourceId
+| extend SubscriptionId = tostring(split(ResourceId, "/")[2])
+| extend ResourceGroup = tostring(split(ResourceId, "/")[4])
+| extend Provider = tostring(split(ResourceId, "/")[6])
+| extend ResourceType = tostring(split(ResourceId, "/")[7])
+| extend ResourceName = tostring(split(ResourceId, "/")[8])
+| top TopN by TotalGB desc
+| project
+    ResourceId,
+    SubscriptionId,
+    ResourceGroup,
+    Provider,
+    ResourceType,
+    ResourceName,
+    TotalGB = round(TotalGB, 3),
+    TotalRows,
+    DistinctTables,
+    DominantTable,
+    DominantTableGB

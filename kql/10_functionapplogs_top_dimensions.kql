@@ -1,0 +1,34 @@
+// Break down FunctionAppLogs by the dimensions that usually explain cost:
+// app, function, category, and level.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetAppName = "";
+let TargetFunctionName = "";
+let TargetCategory = "";
+let TargetLevel = "";
+FunctionAppLogs
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAppName) or AppName =~ TargetAppName
+| where isempty(TargetFunctionName) or FunctionName =~ TargetFunctionName
+| where isempty(TargetCategory) or Category =~ TargetCategory
+| where isempty(TargetLevel) or Level =~ TargetLevel
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    AvgMessageChars = avg(strlen(coalesce(Message, ""))),
+    AvgExceptionChars = avg(strlen(coalesce(ExceptionDetails, "")))
+  by AppName, FunctionName, Category, Level
+| top TopN by GB desc
+| project
+    AppName,
+    FunctionName,
+    Category,
+    Level,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    AvgMessageChars = round(AvgMessageChars, 1),
+    AvgExceptionChars = round(AvgExceptionChars, 1)

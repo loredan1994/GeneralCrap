@@ -1,0 +1,42 @@
+// Normalize noisy FunctionAppLogs messages to surface repeated signatures.
+// This is useful for retry loops, misconfiguration spam, poison queue churn,
+// and low-value repetitive informational logs.
+
+let Lookback = 7d;
+let TopN = 30;
+let TargetAppName = "";
+let TargetFunctionName = "";
+let TargetCategory = "";
+let TargetLevel = "";
+FunctionAppLogs
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAppName) or AppName =~ TargetAppName
+| where isempty(TargetFunctionName) or FunctionName =~ TargetFunctionName
+| where isempty(TargetCategory) or Category =~ TargetCategory
+| where isempty(TargetLevel) or Level =~ TargetLevel
+| extend RawMessage = coalesce(Message, "")
+| extend NormalizedMessage = replace_regex(RawMessage, @"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}", "<guid>")
+| extend NormalizedMessage = replace_regex(NormalizedMessage, @"\b\d+\b", "<n>")
+| extend NormalizedMessage = replace_regex(NormalizedMessage, @"https?://\S+", "<url>")
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    DistinctInvocationIds = dcount(FunctionInvocationId),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated),
+    SampleMessage = any(RawMessage)
+  by AppName, FunctionName, Category, Level, NormalizedMessage
+| top TopN by GB desc
+| project
+    AppName,
+    FunctionName,
+    Category,
+    Level,
+    GB = round(GB, 3),
+    Rows,
+    DistinctInvocationIds,
+    FirstSeen,
+    LastSeen,
+    NormalizedMessage,
+    SampleMessage

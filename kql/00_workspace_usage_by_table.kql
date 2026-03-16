@@ -1,0 +1,75 @@
+// Rank billable tables across 1d, 7d, and 31d windows using the Usage table.
+// This is the default first query to run in a workspace.
+
+let TopN = 25;
+let CurrentEnd = startofday(now());
+let Base =
+    Usage
+    | where TimeGenerated > ago(63d)
+    | where IsBillable == true
+    | where StartTime >= startofday(ago(62d)) and EndTime < CurrentEnd;
+let CurrentWindows =
+    union
+    (
+        Base
+        | where StartTime >= startofday(ago(1d)) and EndTime < CurrentEnd
+        | summarize GB = sum(Quantity) / 1000 by TableName = DataType
+        | extend WindowLabel = "1d", WindowSort = 1
+    ),
+    (
+        Base
+        | where StartTime >= startofday(ago(7d)) and EndTime < CurrentEnd
+        | summarize GB = sum(Quantity) / 1000 by TableName = DataType
+        | extend WindowLabel = "7d", WindowSort = 2
+    ),
+    (
+        Base
+        | where StartTime >= startofday(ago(31d)) and EndTime < CurrentEnd
+        | summarize GB = sum(Quantity) / 1000 by TableName = DataType
+        | extend WindowLabel = "31d", WindowSort = 3
+    );
+let PriorWindows =
+    union
+    (
+        Base
+        | where StartTime >= startofday(ago(2d)) and EndTime < startofday(ago(1d))
+        | summarize PriorComparableGB = sum(Quantity) / 1000 by TableName = DataType
+        | extend WindowLabel = "1d"
+    ),
+    (
+        Base
+        | where StartTime >= startofday(ago(14d)) and EndTime < startofday(ago(7d))
+        | summarize PriorComparableGB = sum(Quantity) / 1000 by TableName = DataType
+        | extend WindowLabel = "7d"
+    ),
+    (
+        Base
+        | where StartTime >= startofday(ago(62d)) and EndTime < startofday(ago(31d))
+        | summarize PriorComparableGB = sum(Quantity) / 1000 by TableName = DataType
+        | extend WindowLabel = "31d"
+    );
+CurrentWindows
+| join kind=leftouter PriorWindows on WindowLabel, TableName
+| join kind=leftouter (
+    CurrentWindows
+    | summarize WindowTotalGB = sum(GB) by WindowLabel
+) on WindowLabel
+| extend SharePct = round(100.0 * GB / WindowTotalGB, 2)
+| extend GrowthPct = iff(
+    isnull(PriorComparableGB) or PriorComparableGB == 0.0,
+    real(null),
+    round(100.0 * (GB - PriorComparableGB) / PriorComparableGB, 2)
+)
+| project
+    WindowLabel,
+    WindowSort,
+    TableName,
+    GB = round(GB, 3),
+    SharePct,
+    PriorComparableGB = round(coalesce(PriorComparableGB, 0.0), 3),
+    GrowthPct
+| partition hint.strategy=native by WindowLabel (
+    top TopN by GB desc
+)
+| order by WindowSort asc, GB desc
+| project-away WindowSort

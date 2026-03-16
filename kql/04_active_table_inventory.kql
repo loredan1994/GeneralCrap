@@ -1,0 +1,30 @@
+// Cheap active-table inventory using Usage.
+// This query is the safe bridge between the workspace's active tables and the
+// official Microsoft Learn table documentation.
+
+let Lookback = 31d;
+let TopN = 100;
+let Base =
+    Usage
+    | where TimeGenerated > ago(32d)
+    | where StartTime >= startofday(ago(Lookback)) and EndTime < startofday(now())
+    | where IsBillable == true;
+let TotalGB = toscalar(Base | summarize sum(Quantity) / 1000.0);
+Base
+| summarize
+    GB = sum(Quantity) / 1000.0,
+    HoursReported = dcount(StartTime),
+    Solutions = make_set(Solution, 10)
+  by TableName = DataType
+| extend SharePct = round(100.0 * GB / TotalGB, 2)
+| extend LikelyTableDocUrl = strcat("https://learn.microsoft.com/azure/azure-monitor/reference/tables/", tolower(TableName))
+| extend LikelySampleQueriesUrl = strcat("https://learn.microsoft.com/azure/azure-monitor/reference/queries/", tolower(TableName))
+| top TopN by GB desc
+| project
+    TableName,
+    GB = round(GB, 3),
+    SharePct,
+    HoursReported,
+    Solutions,
+    LikelyTableDocUrl,
+    LikelySampleQueriesUrl

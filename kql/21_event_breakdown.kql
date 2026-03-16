@@ -1,0 +1,27 @@
+// Rank Event records by the dimensions that usually explain cost.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetComputer = "";
+let TargetEventLog = "";
+let TargetEventID = int(-1);
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| where TargetEventID == -1 or EventID == TargetEventID
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0
+  by EventLog, EventID, EventLevelName, Computer
+| top TopN by GB desc
+| project
+    EventLog,
+    EventID,
+    EventLevelName,
+    Computer,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2)
