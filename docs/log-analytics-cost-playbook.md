@@ -13,7 +13,7 @@ It is optimized for recurring triage rather than a one-off investigation:
 
 ## Package Contents
 - `kql/00_workspace_usage_by_table.kql`: Workspace table ranking for 1d, 7d, and 31d windows.
-- `kql/01_top3_consumers_per_table.kql`: Generic top-3-per-table consumer ranking using recent raw data.
+- `kql/01_top3_consumers_per_table.kql`: Cross-table top-3-per-table consumer ranking using a short raw-data window.
 - `kql/02_cross_table_resource_hotspots.kql`: Recent Azure resource hotspots across all tables.
 - `kql/03_late_arriving_data_check.kql`: Ingestion-day vs event-time analysis for replay and delayed ingestion.
 - `kql/04_active_table_inventory.kql`: Cheap active-table inventory from `Usage`, including billable share and likely doc lookup URLs.
@@ -107,6 +107,8 @@ Escalate a table to drill-down when any of the following is true:
 Run `kql/01_top3_consumers_per_table.kql` with a `1d` or `3d` lookback.
 
 This is intentionally a short-window query because Microsoft explicitly warns that `find` across many tables is resource-intensive. Use it once per incident to find where to focus, not as a general dashboard query.
+
+Do not try to turn this query into a targeted single-table view. Once you know the hot table, switch to `kql/30_generic_table_dimension_scan.kql` or a table-specific drill-down so the scan scope becomes truly narrow.
 
 The query normalizes a best-effort `Consumer` key in this order:
 1. `AppName`

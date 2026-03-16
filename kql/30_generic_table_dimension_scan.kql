@@ -5,18 +5,20 @@ let TargetTable = "FunctionAppLogs";
 let Lookback = 3d;
 let TopN = 15;
 let Base =
-    table(TargetTable)
-    | where TimeGenerated >= ago(Lookback)
-    | where tolower(tostring(column_ifexists("_IsBillable", "true"))) == "true"
-    | extend BilledSize = toreal(column_ifexists("_BilledSize", 0.0))
-    | where BilledSize > 0
-    | extend AppName = tostring(column_ifexists("AppName", ""))
-    | extend ResourceId = tostring(column_ifexists("_ResourceId", ""))
-    | extend Computer = tostring(column_ifexists("Computer", ""))
-    | extend Category = tostring(column_ifexists("Category", ""))
-    | extend Level = tostring(column_ifexists("Level", ""))
-    | extend OperationName = tostring(column_ifexists("OperationName", ""))
-    | extend EventID = tostring(column_ifexists("EventID", column_ifexists("EventId", "")));
+    materialize(
+        table(TargetTable)
+        | where TimeGenerated >= ago(Lookback)
+        | where tolower(tostring(column_ifexists("_IsBillable", "true"))) == "true"
+        | extend BilledSize = toreal(column_ifexists("_BilledSize", 0.0))
+        | where BilledSize > 0
+        | extend AppName = tostring(column_ifexists("AppName", ""))
+        | extend ResourceId = tostring(column_ifexists("_ResourceId", ""))
+        | extend Computer = tostring(column_ifexists("Computer", ""))
+        | extend Category = tostring(column_ifexists("Category", ""))
+        | extend Level = tostring(column_ifexists("Level", ""))
+        | extend OperationName = tostring(column_ifexists("OperationName", ""))
+        | extend EventID = tostring(column_ifexists("EventID", column_ifexists("EventId", "")))
+    );
 union
 (
     Base

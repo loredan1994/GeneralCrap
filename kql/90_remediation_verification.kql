@@ -4,46 +4,52 @@
 
 let TargetTable = "FunctionAppLogs";
 let TargetConsumer = "";
-let WindowDays = 7.0;
 let WindowLength = 7d;
+let WindowDays = WindowLength / 1d;
 let BeforeWindowStart = datetime(2026-03-01);
 let AfterWindowStart = datetime(2026-03-08);
 let TopN = 10;
 let Raw =
-    table(TargetTable)
-    | where TimeGenerated >= BeforeWindowStart and TimeGenerated < (AfterWindowStart + WindowLength)
-    | where tolower(tostring(_IsBillable)) == "true"
-    | extend AppName = tostring(column_ifexists("AppName", ""))
-    | extend ResourceId = tostring(column_ifexists("_ResourceId", ""))
-    | extend Computer = tostring(column_ifexists("Computer", ""))
-    | extend Resource = tostring(column_ifexists("Resource", ""))
-    | extend SubscriptionId = tostring(column_ifexists("_SubscriptionId", ""))
-    | extend SourceSystem = tostring(column_ifexists("SourceSystem", ""))
-    | extend ConsumerType = case(
-        isnotempty(AppName), "AppName",
-        isnotempty(ResourceId), "_ResourceId",
-        isnotempty(Computer), "Computer",
-        isnotempty(Resource), "Resource",
-        isnotempty(SubscriptionId), "_SubscriptionId",
-        isnotempty(SourceSystem), "SourceSystem",
-        "Unknown"
-    )
-    | extend Consumer = case(
-        isnotempty(AppName), AppName,
-        isnotempty(ResourceId), ResourceId,
-        isnotempty(Computer), Computer,
-        isnotempty(Resource), Resource,
-        isnotempty(SubscriptionId), SubscriptionId,
-        isnotempty(SourceSystem), SourceSystem,
-        "<unknown>"
-    )
-    | where isempty(TargetConsumer) or Consumer =~ TargetConsumer;
+    materialize(
+        table(TargetTable)
+        | where TimeGenerated >= BeforeWindowStart and TimeGenerated < (AfterWindowStart + WindowLength)
+        | where tolower(tostring(_IsBillable)) == "true"
+        | extend AppName = tostring(column_ifexists("AppName", ""))
+        | extend ResourceId = tostring(column_ifexists("_ResourceId", ""))
+        | extend Computer = tostring(column_ifexists("Computer", ""))
+        | extend Resource = tostring(column_ifexists("Resource", ""))
+        | extend SubscriptionId = tostring(column_ifexists("_SubscriptionId", ""))
+        | extend SourceSystem = tostring(column_ifexists("SourceSystem", ""))
+        | extend ConsumerType = case(
+            isnotempty(AppName), "AppName",
+            isnotempty(ResourceId), "_ResourceId",
+            isnotempty(Computer), "Computer",
+            isnotempty(Resource), "Resource",
+            isnotempty(SubscriptionId), "_SubscriptionId",
+            isnotempty(SourceSystem), "SourceSystem",
+            "Unknown"
+        )
+        | extend Consumer = case(
+            isnotempty(AppName), AppName,
+            isnotempty(ResourceId), ResourceId,
+            isnotempty(Computer), Computer,
+            isnotempty(Resource), Resource,
+            isnotempty(SubscriptionId), SubscriptionId,
+            isnotempty(SourceSystem), SourceSystem,
+            "<unknown>"
+        )
+        | where isempty(TargetConsumer) or Consumer =~ TargetConsumer
+    );
 let BeforeRaw =
-    Raw
-    | where TimeGenerated >= BeforeWindowStart and TimeGenerated < (BeforeWindowStart + WindowLength);
+    materialize(
+        Raw
+        | where TimeGenerated >= BeforeWindowStart and TimeGenerated < (BeforeWindowStart + WindowLength)
+    );
 let AfterRaw =
-    Raw
-    | where TimeGenerated >= AfterWindowStart and TimeGenerated < (AfterWindowStart + WindowLength);
+    materialize(
+        Raw
+        | where TimeGenerated >= AfterWindowStart and TimeGenerated < (AfterWindowStart + WindowLength)
+    );
 let BeforeTotalGB = toscalar(BeforeRaw | summarize sum(_BilledSize) / 1e9);
 let AfterTotalGB = toscalar(AfterRaw | summarize sum(_BilledSize) / 1e9);
 let BeforeTotalRows = toscalar(BeforeRaw | summarize count());

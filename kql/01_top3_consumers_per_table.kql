@@ -1,60 +1,59 @@
 // Generic cross-table drill-down.
 // Keep the lookback short because find scans raw data across many tables.
-// Set TargetTable to a specific table name to narrow the result when needed.
+// If you already know the target table, use 30_generic_table_dimension_scan.kql
+// or a table-specific query instead of trying to narrow this query.
 
 let Lookback = 1d;
 let TopN = 3;
-let TargetTable = "";
-let Raw =
-    find where TimeGenerated >= ago(Lookback)
-    | project
-        TableName = tostring(Type),
-        BilledSize = toreal(column_ifexists("_BilledSize", 0.0)),
-        IsBillable = tolower(tostring(column_ifexists("_IsBillable", "true"))),
-        AppName = tostring(column_ifexists("AppName", "")),
-        ResourceId = tostring(column_ifexists("_ResourceId", "")),
-        Computer = tostring(column_ifexists("Computer", "")),
-        Resource = tostring(column_ifexists("Resource", "")),
-        SubscriptionId = tostring(column_ifexists("_SubscriptionId", "")),
-        SourceSystem = tostring(column_ifexists("SourceSystem", "")),
-        FunctionName = tostring(column_ifexists("FunctionName", "")),
-        Category = tostring(column_ifexists("Category", "")),
-        Level = tostring(column_ifexists("Level", ""))
-    | where TableName != "Usage"
-    | where IsBillable == "true"
-    | where BilledSize > 0
-    | where isempty(TargetTable) or TableName =~ TargetTable;
-let TableTotals =
-    Raw
-    | summarize TableGB = sum(BilledSize) / 1e9 by TableName;
 let ConsumerBreakdown =
-    Raw
-    | extend ConsumerType = case(
-        isnotempty(AppName), "AppName",
-        isnotempty(ResourceId), "_ResourceId",
-        isnotempty(Computer), "Computer",
-        isnotempty(Resource), "Resource",
-        isnotempty(SubscriptionId), "_SubscriptionId",
-        isnotempty(SourceSystem), "SourceSystem",
-        "Unknown"
-    )
-    | extend Consumer = case(
-        isnotempty(AppName), AppName,
-        isnotempty(ResourceId), ResourceId,
-        isnotempty(Computer), Computer,
-        isnotempty(Resource), Resource,
-        isnotempty(SubscriptionId), SubscriptionId,
-        isnotempty(SourceSystem), SourceSystem,
-        "<unknown>"
-    )
-    | summarize
-        Rows = count(),
-        GB = sum(BilledSize) / 1e9,
-        SampleAppName = any(AppName),
-        SampleFunction = any(FunctionName),
-        SampleCategory = any(Category),
-        SampleLevel = any(Level)
-      by TableName, ConsumerType, Consumer;
+    materialize(
+        find withsource=TableName where TimeGenerated >= ago(Lookback)
+        | project
+            TableName,
+            BilledSize = toreal(column_ifexists("_BilledSize", 0.0)),
+            IsBillable = tolower(tostring(column_ifexists("_IsBillable", "true"))),
+            AppName = tostring(column_ifexists("AppName", "")),
+            ResourceId = tostring(column_ifexists("_ResourceId", "")),
+            Computer = tostring(column_ifexists("Computer", "")),
+            Resource = tostring(column_ifexists("Resource", "")),
+            SubscriptionId = tostring(column_ifexists("_SubscriptionId", "")),
+            SourceSystem = tostring(column_ifexists("SourceSystem", "")),
+            FunctionName = tostring(column_ifexists("FunctionName", "")),
+            Category = tostring(column_ifexists("Category", "")),
+            Level = tostring(column_ifexists("Level", ""))
+        | where TableName != "Usage"
+        | where IsBillable == "true"
+        | where BilledSize > 0
+        | extend ConsumerType = case(
+            isnotempty(AppName), "AppName",
+            isnotempty(ResourceId), "_ResourceId",
+            isnotempty(Computer), "Computer",
+            isnotempty(Resource), "Resource",
+            isnotempty(SubscriptionId), "_SubscriptionId",
+            isnotempty(SourceSystem), "SourceSystem",
+            "Unknown"
+        )
+        | extend Consumer = case(
+            isnotempty(AppName), AppName,
+            isnotempty(ResourceId), ResourceId,
+            isnotempty(Computer), Computer,
+            isnotempty(Resource), Resource,
+            isnotempty(SubscriptionId), SubscriptionId,
+            isnotempty(SourceSystem), SourceSystem,
+            "<unknown>"
+        )
+        | summarize
+            Rows = count(),
+            GB = sum(BilledSize) / 1e9,
+            SampleAppName = any(AppName),
+            SampleFunction = any(FunctionName),
+            SampleCategory = any(Category),
+            SampleLevel = any(Level)
+          by TableName, ConsumerType, Consumer
+    );
+let TableTotals =
+    ConsumerBreakdown
+    | summarize TableGB = sum(GB) by TableName;
 ConsumerBreakdown
 | join kind=inner TableTotals on TableName
 | extend PctOfTable = round(100.0 * GB / TableGB, 2)

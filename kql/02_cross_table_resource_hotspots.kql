@@ -5,9 +5,9 @@
 let Lookback = 1d;
 let TopN = 25;
 let Raw =
-    find where TimeGenerated >= ago(Lookback)
+    find withsource=TableName where TimeGenerated >= ago(Lookback)
     | project
-        TableName = tostring(Type),
+        TableName,
         ResourceId = tostring(column_ifexists("_ResourceId", "")),
         BilledSize = toreal(column_ifexists("_BilledSize", 0.0)),
         IsBillable = tolower(tostring(column_ifexists("_IsBillable", "true")))
@@ -16,8 +16,10 @@ let Raw =
     | where BilledSize > 0
     | where isnotempty(ResourceId);
 let ByResourceTable =
-    Raw
-    | summarize TableGB = sum(BilledSize) / 1e9, TableRows = count() by ResourceId, TableName;
+    materialize(
+        Raw
+        | summarize TableGB = sum(BilledSize) / 1e9, TableRows = count() by ResourceId, TableName
+    );
 let DominantTableByResource =
     ByResourceTable
     | summarize arg_max(TableGB, TableName) by ResourceId
