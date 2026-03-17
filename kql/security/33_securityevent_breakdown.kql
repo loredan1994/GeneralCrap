@@ -1,0 +1,30 @@
+// Manual targeted drill-down for SecurityEvent cost drivers.
+
+let Lookback = 3d;
+let TopN = 50;
+let TargetComputer = "";
+let TargetEventID = int(-1);
+let TargetActivity = "";
+SecurityEvent
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where TargetEventID == -1 or EventID == TargetEventID
+| where isempty(TargetActivity) or Activity =~ TargetActivity
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0
+  by EventID, Computer, Activity, LogonTypeName, TargetAccount, EventSourceName, Channel
+| top TopN by GB desc
+| project
+    EventID,
+    Computer,
+    Activity,
+    LogonTypeName,
+    TargetAccount,
+    EventSourceName,
+    Channel,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2)

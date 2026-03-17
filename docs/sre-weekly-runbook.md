@@ -4,9 +4,9 @@
 Use a cheap weekly process to detect ingestion-cost regressions early, then escalate only the tables that need manual triage.
 
 ## Weekly Loop
-1. Run `kql/04_active_table_inventory.kql`.
-2. Run `kql/00_workspace_usage_by_table.kql`.
-3. Run `kql/05_weekly_ingestion_anomalies_by_table.kql`.
+1. Run `kql/core/04_active_table_inventory.kql`.
+2. Run `kql/core/00_workspace_usage_by_table.kql`.
+3. Run `kql/core/05_weekly_ingestion_anomalies_by_table.kql`.
 4. Check Log Analytics Workspace Insights:
    - Usage tab for top tables and anomalies.
    - Query Audit for slow or inefficient recurring queries.
@@ -20,17 +20,17 @@ Use a cheap weekly process to detect ingestion-cost regressions early, then esca
 
 ## Safe Query Set
 Use these for scheduled runs, workbooks, or a weekly checklist:
-- `kql/04_active_table_inventory.kql`
-- `kql/00_workspace_usage_by_table.kql`
-- `kql/05_weekly_ingestion_anomalies_by_table.kql`
+- `kql/core/04_active_table_inventory.kql`
+- `kql/core/00_workspace_usage_by_table.kql`
+- `kql/core/05_weekly_ingestion_anomalies_by_table.kql`
 
 ## Manual Investigation Set
 Use these only after a hot table or resource has already been identified:
-- `kql/01_top3_consumers_per_table.kql`
-- `kql/02_cross_table_resource_hotspots.kql`
-- `kql/03_late_arriving_data_check.kql`
-- `kql/30_generic_table_dimension_scan.kql`
-- all table-specific drill-down files under `kql/10+`
+- `kql/core/01_top3_consumers_per_table.kql`
+- `kql/core/02_cross_table_resource_hotspots.kql`
+- `kql/core/03_late_arriving_data_check.kql`
+- `kql/generic/30_generic_table_dimension_scan.kql`
+- the table-specific drill-down files under `kql/app`, `kql/platform`, `kql/guest-os`, and `kql/security`
 
 ## Escalation Thresholds
 - Table is at least 10% of workspace ingestion.
@@ -39,22 +39,27 @@ Use these only after a hot table or resource has already been identified:
 - Error-heavy or repeated-message patterns dominate the table.
 
 ## Which Query To Use By Table Family
-- Azure Functions and App Service runtime logs: `kql/10_*`, `kql/11_*`, `kql/12_*`
-- Azure resource logs: `kql/20_azurediagnostics_breakdown.kql` or `kql/30_generic_table_dimension_scan.kql` for resource-specific tables
-- Windows guest OS logs: `kql/21_event_breakdown.kql`
-- Linux guest OS logs: `kql/22_syslog_breakdown.kql`
-- Workspace-based Application Insights and OTel tables: `kql/23_applicationinsights_builtin_breakdown.kql`
-- Azure control plane logs: `kql/24_azureactivity_breakdown.kql`
-- AKS or container logs: `kql/25_containerlogv2_breakdown.kql`
-- VM performance counters: `kql/26_perf_breakdown.kql`
-- Azure Monitor metrics stored in logs: `kql/27_insightsmetrics_breakdown.kql`
+- Azure Functions and App Service runtime logs: `kql/app/10_*`, `kql/app/11_*`, `kql/app/12_*`
+- Azure resource logs: `kql/platform/20_azurediagnostics_breakdown.kql` or `kql/generic/30_generic_table_dimension_scan.kql` for resource-specific tables
+- Windows guest OS logs, classic `Event` table: `kql/guest-os/21_event_breakdown.kql`
+- Windows guest OS logs, AMA or DCR `WindowsEvent` table: `kql/guest-os/34_windowsevent_breakdown.kql`
+- Windows security audit events: `kql/security/33_securityevent_breakdown.kql`
+- Linux guest OS logs: `kql/guest-os/22_syslog_breakdown.kql`
+- Microsoft Entra sign-in logs: `kql/security/28_signinlogs_breakdown.kql`
+- Microsoft Entra audit logs: `kql/security/29_auditlogs_breakdown.kql`
+- Workspace-based Application Insights and OTel tables: `kql/app/23_applicationinsights_builtin_breakdown.kql`
+- Azure control plane logs: `kql/platform/24_azureactivity_breakdown.kql`
+- AKS or container logs: `kql/platform/25_containerlogv2_breakdown.kql`
+- VM performance counters: `kql/platform/26_perf_breakdown.kql`
+- Azure Monitor metrics stored in logs: `kql/platform/27_insightsmetrics_breakdown.kql`
+- If the hot VM event table is `Event`, use the classic Windows event path. If it is `WindowsEvent`, use the AMA or DCR path. Do not treat them as interchangeable because the schemas and likely collection controls are different.
 
 ## If Azure Monitor Shows Query Warnings
 - Reduce the time range first. Start at `1d` or `3d`, not `7d` or `31d`, for raw table scans.
-- Move from `kql/01_top3_consumers_per_table.kql` or `kql/02_cross_table_resource_hotspots.kql` to a single-table drill-down as soon as the hot table or resource is known.
+- Move from `kql/core/01_top3_consumers_per_table.kql` or `kql/core/02_cross_table_resource_hotspots.kql` to a single-table drill-down as soon as the hot table or resource is known.
 - Use the Query Details pane and Query Audit to identify whether the query is CPU-heavy, queued, or returning too much data.
 - Break weekly automation into a small safe set. Do not put cross-table `find` queries on a frequent refresh.
-- For unknown built-in tables, run `kql/31_builtin_table_shape_probe.kql` before building a custom drill-down.
+- For unknown built-in tables, run `kql/generic/31_builtin_table_shape_probe.kql` before building a custom drill-down.
 
 ## Guardrails
 - `00` and `04` use last full-day buckets. They are for accounting and weekly review, not real-time incident response.

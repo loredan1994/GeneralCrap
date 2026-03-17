@@ -79,7 +79,14 @@ This file is the official-source companion to the KQL package. It explains which
    - category or solution
    - Basic log support
    - ingestion-time transformation support
-4. Then run `kql/30_generic_table_dimension_scan.kql` for that table.
+4. Then run `kql/generic/30_generic_table_dimension_scan.kql` for that table.
+
+### If the hot table is a Windows or identity/security table
+- `Event`: use the Microsoft Learn `Event` table page and its sample queries.
+- `WindowsEvent`: use the `WindowsEvent` table page and confirm AMA or DCR-style fields such as `Channel` and `Provider`.
+- `SecurityEvent`: use the `SecurityEvent` table page and sample queries for common high-volume event IDs.
+- `SigninLogs`: use the `SigninLogs` table page and sample queries to confirm app, resource, user, and result fields.
+- `AuditLogs`: use the `AuditLogs` table page to confirm activity, operation type, initiator, and target resource fields.
 
 ### If you are deciding on a remediation
 Use the official table page plus the transformations and Basic Logs reference pages before you decide:

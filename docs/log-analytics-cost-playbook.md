@@ -12,32 +12,45 @@ It is optimized for recurring triage rather than a one-off investigation:
 5. Verify the change with before/after cost evidence.
 
 ## Package Contents
-- `kql/00_workspace_usage_by_table.kql`: Workspace table ranking for 1d, 7d, and 31d windows.
-- `kql/01_top3_consumers_per_table.kql`: Cross-table top-3-per-table consumer ranking using a short raw-data window.
-- `kql/02_cross_table_resource_hotspots.kql`: Recent Azure resource hotspots across all tables.
-- `kql/03_late_arriving_data_check.kql`: Ingestion-day vs event-time analysis for replay and delayed ingestion.
-- `kql/04_active_table_inventory.kql`: Cheap active-table inventory from `Usage`, including billable share and likely doc lookup URLs.
-- `kql/05_weekly_ingestion_anomalies_by_table.kql`: Automation-safe weekly anomaly scan based on `Usage`.
-- `kql/10_functionapplogs_top_dimensions.kql`: `FunctionAppLogs` breakdown by app, function, category, and level.
-- `kql/11_functionapplogs_repeated_messages.kql`: Normalized repeated message signatures for noisy Functions logs.
-- `kql/12_functionapplogs_execution_outcomes.kql`: Function execution outcomes, failures, and duration.
-- `kql/20_azurediagnostics_breakdown.kql`: `AzureDiagnostics` breakdown by provider, type, category, operation, and resource.
-- `kql/21_event_breakdown.kql`: `Event` breakdown by event log, ID, level, and computer.
-- `kql/22_syslog_breakdown.kql`: `Syslog` breakdown by computer, facility, severity, and process.
-- `kql/23_applicationinsights_builtin_breakdown.kql`: Workspace-based Application Insights and OTel table breakdown.
-- `kql/24_azureactivity_breakdown.kql`: `AzureActivity` breakdown by caller, provider, operation, and status.
-- `kql/25_containerlogv2_breakdown.kql`: `ContainerLogV2` breakdown by namespace, pod, container, and log level.
-- `kql/26_perf_breakdown.kql`: `Perf` breakdown by computer, object, counter, and instance.
-- `kql/27_insightsmetrics_breakdown.kql`: `InsightsMetrics` breakdown by resource, origin, namespace, and metric name.
-- `kql/30_generic_table_dimension_scan.kql`: Generic dimension scan for any single built-in table selected after table ranking.
-- `kql/31_builtin_table_shape_probe.kql`: Probe for populated common dimensions in any built-in table before building a custom drill-down.
-- `kql/32_builtin_table_drilldown_template.kql`: Reusable short-window template for table-specific drill-downs.
-- `kql/90_remediation_verification.kql`: Before/after comparison and savings estimate after a fix.
+- `kql/core/00_workspace_usage_by_table.kql`: Workspace table ranking for 1d, 7d, and 31d windows.
+- `kql/core/01_top3_consumers_per_table.kql`: Cross-table top-3-per-table consumer ranking using a short raw-data window.
+- `kql/core/02_cross_table_resource_hotspots.kql`: Recent Azure resource hotspots across all tables.
+- `kql/core/03_late_arriving_data_check.kql`: Ingestion-day vs event-time analysis for replay and delayed ingestion.
+- `kql/core/04_active_table_inventory.kql`: Cheap active-table inventory from `Usage`, including billable share and likely doc lookup URLs.
+- `kql/core/05_weekly_ingestion_anomalies_by_table.kql`: Automation-safe weekly anomaly scan based on `Usage`.
+- `kql/app/10_functionapplogs_top_dimensions.kql`: `FunctionAppLogs` breakdown by app, function, category, and level.
+- `kql/app/11_functionapplogs_repeated_messages.kql`: Normalized repeated message signatures for noisy Functions logs.
+- `kql/app/12_functionapplogs_execution_outcomes.kql`: Function execution outcomes, failures, and duration.
+- `kql/platform/20_azurediagnostics_breakdown.kql`: `AzureDiagnostics` breakdown by provider, type, category, operation, and resource.
+- `kql/guest-os/21_event_breakdown.kql`: `Event` breakdown by event log, ID, level, and computer.
+- `kql/guest-os/22_syslog_breakdown.kql`: `Syslog` breakdown by computer, facility, severity, and process.
+- `kql/app/23_applicationinsights_builtin_breakdown.kql`: Workspace-based Application Insights and OTel table breakdown.
+- `kql/platform/24_azureactivity_breakdown.kql`: `AzureActivity` breakdown by caller, provider, operation, and status.
+- `kql/platform/25_containerlogv2_breakdown.kql`: `ContainerLogV2` breakdown by namespace, pod, container, and log level.
+- `kql/platform/26_perf_breakdown.kql`: `Perf` breakdown by computer, object, counter, and instance.
+- `kql/platform/27_insightsmetrics_breakdown.kql`: `InsightsMetrics` breakdown by resource, origin, namespace, and metric name.
+- `kql/security/28_signinlogs_breakdown.kql`: `SigninLogs` breakdown by app, resource, user, result, and conditional access status.
+- `kql/security/29_auditlogs_breakdown.kql`: `AuditLogs` breakdown by activity, operation type, initiator, and result.
+- `kql/generic/30_generic_table_dimension_scan.kql`: Generic dimension scan for any single built-in table selected after table ranking.
+- `kql/generic/31_builtin_table_shape_probe.kql`: Probe for populated common dimensions in any built-in table before building a custom drill-down.
+- `kql/generic/32_builtin_table_drilldown_template.kql`: Reusable short-window template for table-specific drill-downs.
+- `kql/security/33_securityevent_breakdown.kql`: `SecurityEvent` breakdown by event ID, computer, activity, and target account.
+- `kql/guest-os/34_windowsevent_breakdown.kql`: `WindowsEvent` breakdown by channel, provider, event ID, and computer.
+- `kql/core/90_remediation_verification.kql`: Before/after comparison and savings estimate after a fix.
 - `docs/microsoft-learn-reference-map.md`: Official Microsoft source map for built-in table discovery, per-table attributes, and optimization guidance.
 - `docs/builtin-table-family-map.md`: Quick family map for unfamiliar built-in tables.
 - `docs/sre-weekly-runbook.md`: Short weekly operating runbook for SRE teams.
 - `docs/triage-notes-template.md`: Investigation worksheet for one suspected issue.
 - `docs/weekly-review-template.md`: Short weekly review artifact for recurring handoff.
+- `kql/README.md`: Folder map and quick starting points for the KQL library.
+
+## Folder Layout
+- `kql/core`: workspace-level and weekly-safe queries plus remediation verification.
+- `kql/generic`: built-in-table probe and reusable drill-down templates.
+- `kql/app`: app/runtime telemetry such as Functions and Application Insights.
+- `kql/platform`: Azure platform, control plane, container, and metrics/perf tables.
+- `kql/guest-os`: Windows and Linux guest log collection.
+- `kql/security`: identity and security-focused tables.
 
 ## Official Source of Truth
 This package is grounded in Microsoft Learn rather than a hard-coded opinionated list of tables.
@@ -67,11 +80,11 @@ Do not try to reverse-engineer the entire built-in universe from your workspace 
 
 ### 2. Which built-in tables are actually active and billable in this workspace?
 Use `Usage`:
-- `kql/04_active_table_inventory.kql`
-- `kql/00_workspace_usage_by_table.kql`
+- `kql/core/04_active_table_inventory.kql`
+- `kql/core/00_workspace_usage_by_table.kql`
 
 This is the cheap path. Start from active tables, not the entire built-in catalog.
-Treat `LikelyTableClass` in `kql/04_active_table_inventory.kql` as a heuristic only. Active billable tables can include custom tables, so confirm built-in status against Microsoft Learn before using the built-in-table path.
+Treat `LikelyTableClass` in `kql/core/04_active_table_inventory.kql` as a heuristic only. Active billable tables can include custom tables, so confirm built-in status against Microsoft Learn before using the built-in-table path.
 
 ## Operating Model
 
@@ -100,19 +113,19 @@ These rules are directly aligned to Microsoft’s Azure Monitor query optimizati
 
 ### Automation-Safe Versus Manual-Only
 Use these in scheduled reviews, workbooks, or weekly jobs:
-- `kql/04_active_table_inventory.kql`
-- `kql/00_workspace_usage_by_table.kql`
-- `kql/05_weekly_ingestion_anomalies_by_table.kql`
+- `kql/core/04_active_table_inventory.kql`
+- `kql/core/00_workspace_usage_by_table.kql`
+- `kql/core/05_weekly_ingestion_anomalies_by_table.kql`
 
 Use these only for manual triage after a hot table or hot resource is already known:
-- `kql/01_top3_consumers_per_table.kql`
-- `kql/02_cross_table_resource_hotspots.kql`
-- `kql/03_late_arriving_data_check.kql`
-- `kql/30_generic_table_dimension_scan.kql`
+- `kql/core/01_top3_consumers_per_table.kql`
+- `kql/core/02_cross_table_resource_hotspots.kql`
+- `kql/core/03_late_arriving_data_check.kql`
+- `kql/generic/30_generic_table_dimension_scan.kql`
 - the table-specific drill-down queries
 
 ### Step 1: Find Expensive Tables
-Run `kql/04_active_table_inventory.kql` first, then `kql/00_workspace_usage_by_table.kql`, then `kql/05_weekly_ingestion_anomalies_by_table.kql`.
+Run `kql/core/04_active_table_inventory.kql` first, then `kql/core/00_workspace_usage_by_table.kql`, then `kql/core/05_weekly_ingestion_anomalies_by_table.kql`.
 
 Use it to answer:
 - Which active billable tables are present in this workspace, and which are likely built-in?
@@ -131,14 +144,14 @@ Escalate a table to drill-down when any of the following is true:
 - The table is at least 10% of workspace billable ingestion.
 - The table shows at least 2x growth versus the prior comparable 7-day window.
 - The weekly anomaly query flags it as `NewOrPreviouslyTinyTable`, `RecentAvgAboveBaseline`, or `LatestDaySpike`.
-- The table is already known to be operationally noisy, such as `FunctionAppLogs`, `AzureDiagnostics`, or `Event`.
+- The table is already known to be operationally noisy, such as `FunctionAppLogs`, `AzureDiagnostics`, `Event`, `WindowsEvent`, `SecurityEvent`, `SigninLogs`, or `AuditLogs`.
 
 ### Step 2: Find the Top 3 Consumers Inside Each Table
-Run `kql/01_top3_consumers_per_table.kql` with a `1d` or `3d` lookback.
+Run `kql/core/01_top3_consumers_per_table.kql` with a `1d` or `3d` lookback.
 
 This is intentionally a short-window query because Microsoft explicitly warns that `find` across many tables is resource-intensive. Use it once per incident to find where to focus, not as a general dashboard query.
 
-Do not try to turn this query into a targeted single-table view. Once you know the hot table, switch to `kql/30_generic_table_dimension_scan.kql` or a table-specific drill-down so the scan scope becomes truly narrow.
+Do not try to turn this query into a targeted single-table view. Once you know the hot table, switch to `kql/generic/30_generic_table_dimension_scan.kql` or a table-specific drill-down so the scan scope becomes truly narrow.
 
 The query normalizes a best-effort `Consumer` key in this order:
 1. `AppName`
@@ -151,7 +164,7 @@ The query normalizes a best-effort `Consumer` key in this order:
 Interpretation rules:
 - If one consumer is at least 25% of a table, triage that consumer first.
 - If a table has multiple consumers with similar percentages, the issue is likely a shared platform setting, collection policy, or broad workload growth.
-- If the same `_ResourceId` appears across multiple tables, pivot to `kql/02_cross_table_resource_hotspots.kql`.
+- If the same `_ResourceId` appears across multiple tables, pivot to `kql/core/02_cross_table_resource_hotspots.kql`.
 
 ### Step 3: Drill Down by Table Type
 
@@ -159,26 +172,26 @@ Interpretation rules:
 Do not assume all Azure resource logs land in `AzureDiagnostics`. Many services now emit to resource-specific built-in tables.
 
 Use this sequence:
-1. Use `kql/04_active_table_inventory.kql` and `kql/00_workspace_usage_by_table.kql` to identify the hot resource-specific table.
+1. Use `kql/core/04_active_table_inventory.kql` and `kql/core/00_workspace_usage_by_table.kql` to identify the hot resource-specific table.
 2. Open the official table doc for that table.
-3. Run `kql/30_generic_table_dimension_scan.kql` if there is no dedicated query yet.
+3. Run `kql/generic/30_generic_table_dimension_scan.kql` if there is no dedicated query yet.
 4. Review the resource's diagnostic settings and category groups before changing collection.
 
 #### Any built-in table not already covered
 Use this sequence:
 1. Open the Microsoft Learn table reference page for the table.
 2. Check the table columns, sample queries, and table attributes.
-3. Run `kql/31_builtin_table_shape_probe.kql` to see which common dimensions are actually populated.
-4. Run `kql/30_generic_table_dimension_scan.kql` against that table.
+3. Run `kql/generic/31_builtin_table_shape_probe.kql` to see which common dimensions are actually populated.
+4. Run `kql/generic/30_generic_table_dimension_scan.kql` against that table.
 5. If the generic scan identifies a dominant dimension, build or adapt a table-specific query only for that table.
 
 Use this path for unknown or newly encountered built-in tables so the workflow remains grounded in official schema and remains cheap.
 
 #### FunctionAppLogs
 Use this sequence:
-1. `kql/10_functionapplogs_top_dimensions.kql`
-2. `kql/11_functionapplogs_repeated_messages.kql`
-3. `kql/12_functionapplogs_execution_outcomes.kql`
+1. `kql/app/10_functionapplogs_top_dimensions.kql`
+2. `kql/app/11_functionapplogs_repeated_messages.kql`
+3. `kql/app/12_functionapplogs_execution_outcomes.kql`
 
 What you are looking for:
 - One app or function dominating `GB`.
@@ -192,7 +205,7 @@ High-confidence `FunctionAppLogs` symptoms:
 - `Host` or runtime categories dominating multiple apps: likely Azure Functions host logging configuration or platform-side verbosity.
 
 #### AzureDiagnostics
-Run `kql/20_azurediagnostics_breakdown.kql`.
+Run `kql/platform/20_azurediagnostics_breakdown.kql`.
 
 What you are looking for:
 - One `ResourceProvider` or `Category` dominating usage.
@@ -206,7 +219,9 @@ Typical fixes:
 - Revisit whether logs are needed in Analytics versus another destination.
 
 #### Event
-Run `kql/21_event_breakdown.kql`.
+Run `kql/guest-os/21_event_breakdown.kql`.
+
+Use this for the classic `Event` table, typically when Windows events are collected into the legacy event schema with `EventLog`, `Source`, and `RenderedDescription`.
 
 What you are looking for:
 - Specific `EventID` values that are unexpectedly frequent.
@@ -218,8 +233,68 @@ Typical fixes:
 - Fix the host or application generating the repeated events.
 - Remove redundant event sources from collection rules.
 
+#### WindowsEvent
+Run `kql/guest-os/34_windowsevent_breakdown.kql`.
+
+Use this for AMA or DCR-style Windows event collection where the table exposes `Channel`, `Provider`, and parsed event payload fields.
+
+What you are looking for:
+- One `Channel` or `Provider` dominating ingestion.
+- Specific `EventID` values that are far more frequent than expected.
+- One `Computer` or VM class dominating the table.
+
+Typical fixes:
+- Tighten DCR event selection by channel, provider, or event ID.
+- Remove noisy providers or low-value event streams.
+- Fix the emitting workload if one provider is generating repetitive errors or informational spam.
+
+#### SecurityEvent
+Run `kql/security/33_securityevent_breakdown.kql`.
+
+Use this for Windows security audit events, especially logons, account management, process execution, and policy change activity.
+
+What you are looking for:
+- One `EventID` dominating the table, such as repetitive logon success or failure events.
+- One `Computer` or server tier generating disproportionate security audit volume.
+- One `LogonTypeName`, `Activity`, or account dimension explaining the cost.
+
+Typical fixes:
+- Review Windows audit policy scope before collecting more categories than needed.
+- Fix hosts or workloads causing repeated failed logons or security churn.
+- Reduce unnecessary security event forwarding if it is not required for operations or compliance.
+
+#### SigninLogs
+Run `kql/security/28_signinlogs_breakdown.kql`.
+
+Use this for Microsoft Entra sign-in activity.
+
+What you are looking for:
+- One `AppDisplayName` or `ResourceDisplayName` dominating ingestion.
+- One `UserPrincipalName` or automation identity creating unusual volume.
+- Repeated failure-heavy `ResultType` or `ResultDescription` patterns.
+
+Typical fixes:
+- Investigate misconfigured clients, broken automation, or repeated auth failures.
+- Review whether all sign-in categories must stay in Analytics if the table options allow a different plan.
+- Use the per-table attributes page before considering Basic Logs or ingestion-time transformations.
+
+#### AuditLogs
+Run `kql/security/29_auditlogs_breakdown.kql`.
+
+Use this for Microsoft Entra audit activity such as user, group, app, and directory changes.
+
+What you are looking for:
+- One `ActivityDisplayName` or `AADOperationType` dominating the table.
+- One initiator or automation identity driving repeated changes.
+- Large bursts of success or failure events tied to one workflow.
+
+Typical fixes:
+- Fix automation loops or governance tooling that repeatedly updates objects.
+- Review audit routing and retention decisions if the volume is operationally low-value but required for compliance.
+- Validate transformation and table-plan support on the Microsoft Learn table page before changing ingestion strategy.
+
 #### Syslog
-Run `kql/22_syslog_breakdown.kql`.
+Run `kql/guest-os/22_syslog_breakdown.kql`.
 
 What you are looking for:
 - One process or facility dominating ingestion.
@@ -232,7 +307,7 @@ Typical fixes:
 - Remove low-value facilities or process streams from collection.
 
 #### Workspace-based Application Insights and OpenTelemetry tables
-Run `kql/23_applicationinsights_builtin_breakdown.kql`.
+Run `kql/app/23_applicationinsights_builtin_breakdown.kql`.
 
 Common target tables:
 - `AppTraces`
@@ -253,27 +328,27 @@ Typical fixes:
 - Fix the dependency, retry loop, or instrumentation issue causing the volume.
 
 #### AzureActivity
-Run `kql/24_azureactivity_breakdown.kql`.
+Run `kql/platform/24_azureactivity_breakdown.kql`.
 
 Use this when control plane activity appears unexpectedly large or bursty. Focus on the caller, provider, operation, and status to identify automation loops or misconfigured governance tooling.
 
 #### ContainerLogV2
-Run `kql/25_containerlogv2_breakdown.kql`.
+Run `kql/platform/25_containerlogv2_breakdown.kql`.
 
 Use this when AKS or container workloads dominate ingestion. Focus on namespace, pod, container, and log level to isolate chatty services or bad rollout behavior.
 
 #### Perf
-Run `kql/26_perf_breakdown.kql`.
+Run `kql/platform/26_perf_breakdown.kql`.
 
 Use this when VM or agent-driven performance collection becomes expensive. Focus on object, counter, and instance to identify oversampling or unnecessary counters.
 
 #### InsightsMetrics
-Run `kql/27_insightsmetrics_breakdown.kql`.
+Run `kql/platform/27_insightsmetrics_breakdown.kql`.
 
 Use this when Azure Monitor metrics routed into logs become a cost driver. Focus on resource, origin, namespace, and metric name, then revisit whether the metric really needs to be stored in Logs.
 
 ### Step 4: Check for Replay or Late Arrival
-Run `kql/03_late_arriving_data_check.kql` for any suspicious table spike.
+Run `kql/core/03_late_arriving_data_check.kql` for any suspicious table spike.
 
 Use this when:
 - `Usage` shows a spike but raw queries by `TimeGenerated` do not explain it.
@@ -291,6 +366,10 @@ Indicators:
 | One function emits large `Information`/`Debug`/`Trace` volume | Overly verbose app logging | Lower log levels, reduce payload dumps, keep only action-oriented logs |
 | One Azure resource dominates `AzureDiagnostics` | Over-collected diagnostic categories | Remove unused categories, split high-volume categories, or transform/drop low-value records |
 | One computer dominates `Event` | Host problem or bad event filter | Fix the source host and tighten event collection |
+| One provider or channel dominates `WindowsEvent` | AMA or DCR event selection too broad or one noisy provider | Tighten DCR event criteria by channel, provider, or event ID |
+| One event ID or logon type dominates `SecurityEvent` | Audit policy too broad or repeated auth churn | Review audit policy scope and fix the failing or looping source |
+| One app, resource, or identity dominates `SigninLogs` | Broken client, auth storm, or noisy automation | Fix the caller and review sign-in log plan and retention options |
+| One activity or initiator dominates `AuditLogs` | Automation loop or governance process churn | Fix the initiator workflow and review audit data routing |
 | One `_ResourceId` is hot across several tables | Shared workload issue | Triage resource behavior before changing workspace-wide policy |
 | Spike exists in `Usage` but raw event time is old | Backfill or late arrival | Investigate replay path, buffering, connectivity, or clock skew |
 | Table stays expensive after app fixes | Collection/retention mismatch | Review transformations, retention, and table plan eligibility |
@@ -330,14 +409,14 @@ These are defaults, not laws. Lower them when the workspace is small or when cos
 After any remediation:
 
 1. Wait for enough post-change data to accumulate.
-2. Run `kql/90_remediation_verification.kql`.
+2. Run `kql/core/90_remediation_verification.kql`.
 3. Compare before and after windows using the same duration.
 4. Record:
    - total `GB` before vs after
    - daily savings
    - estimated monthly savings
    - top consumer reductions
-5. Re-run `kql/00_workspace_usage_by_table.kql` and `kql/01_top3_consumers_per_table.kql` to confirm the issue no longer dominates the workspace.
+5. Re-run `kql/core/00_workspace_usage_by_table.kql` and `kql/core/01_top3_consumers_per_table.kql` to confirm the issue no longer dominates the workspace.
 
 ## Recommended Triage Cadence
 
