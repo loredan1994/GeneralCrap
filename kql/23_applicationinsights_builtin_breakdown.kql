@@ -1,0 +1,42 @@
+// Manual targeted drill-down for workspace-based Application Insights and OTel tables.
+// Common targets: AppTraces, AppExceptions, AppRequests, AppDependencies, OTelLogs, OTelTraces.
+
+let TargetTable = "AppTraces";
+let Lookback = 7d;
+let TopN = 50;
+let TargetAppRole = "";
+let TargetOperationName = "";
+let TargetSeverity = "";
+table(TargetTable)
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(column_ifexists("_IsBillable", "true"))) == "true"
+| extend BilledSize = toreal(column_ifexists("_BilledSize", 0.0))
+| where BilledSize > 0
+| extend AppRole = tostring(coalesce(column_ifexists("AppRoleName", ""), column_ifexists("cloud_RoleName", "")))
+| extend OperationName = tostring(coalesce(column_ifexists("OperationName", ""), column_ifexists("operation_Name", "")))
+| extend Severity = tostring(coalesce(column_ifexists("SeverityLevel", ""), column_ifexists("severityLevel", "")))
+| extend ResultCode = tostring(coalesce(column_ifexists("ResultCode", ""), column_ifexists("resultCode", "")))
+| extend DependencyType = tostring(coalesce(column_ifexists("DependencyType", ""), column_ifexists("type", "")))
+| extend Success = tostring(coalesce(column_ifexists("Success", ""), column_ifexists("success", "")))
+| extend ResourceId = tostring(column_ifexists("_ResourceId", ""))
+| where isempty(TargetAppRole) or AppRole =~ TargetAppRole
+| where isempty(TargetOperationName) or OperationName =~ TargetOperationName
+| where isempty(TargetSeverity) or Severity =~ TargetSeverity
+| summarize
+    Rows = count(),
+    GB = sum(BilledSize) / 1e9,
+    AvgKB = avg(BilledSize) / 1024.0
+  by TableName = TargetTable, AppRole, OperationName, Severity, ResultCode, DependencyType, Success, ResourceId
+| top TopN by GB desc
+| project
+    TableName,
+    AppRole,
+    OperationName,
+    Severity,
+    ResultCode,
+    DependencyType,
+    Success,
+    ResourceId,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2)

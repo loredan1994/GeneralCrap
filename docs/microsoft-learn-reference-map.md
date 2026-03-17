@@ -34,6 +34,31 @@ This file is the official-source companion to the KQL package. It explains which
 - Use for: performance and cost-aware query construction.
 - Why it matters: this is the official source for early filtering, reducing retrieved columns, avoiding broad scans, and other efficiency rules.
 
+### Log Analytics Workspace Insights
+- URL: [Log Analytics Workspace Insights](https://learn.microsoft.com/azure/azure-monitor/logs/log-analytics-workspace-insights-overview)
+- Use for: regular review of top tables, ingestion anomalies, workspace usage, and query audit findings.
+- Why it matters: this is the official workspace-level operational view that SRE teams should check weekly alongside the custom KQL package.
+
+### Audit queries in Azure Monitor Logs
+- URL: [Audit queries in Azure Monitor Logs](https://learn.microsoft.com/azure/azure-monitor/logs/query-audit)
+- Use for: enabling query audit telemetry and reviewing expensive recurring queries.
+- Why it matters: weekly cost governance should include the queries that operators and dashboards run, not just the data being ingested.
+
+### Monitor operational issues in your Azure Monitor Log Analytics workspace
+- URL: [Monitor operational issues in your Azure Monitor Log Analytics workspace](https://learn.microsoft.com/azure/azure-monitor/logs/monitor-workspace)
+- Use for: `_LogOperation`, workspace warnings, and workspace-level alerts.
+- Why it matters: ingestion and query problems can distort cost analysis or hide backfill and throttling behavior.
+
+### Aggregate data in a Log Analytics workspace by using summary rules
+- URL: [Aggregate data in a Log Analytics workspace by using summary rules](https://learn.microsoft.com/azure/azure-monitor/logs/summary-rules)
+- Use for: long-range reporting and repeated analysis on very high-volume data streams.
+- Why it matters: summary rules are the official way to reduce repeated long-range raw scans for recurring reporting.
+
+### Diagnostic settings in Azure Monitor
+- URL: [Diagnostic settings in Azure Monitor](https://learn.microsoft.com/azure/azure-monitor/platform/diagnostic-settings)
+- Use for: resource-log category selection, category groups, routing destinations, and cost controls.
+- Why it matters: most Azure resource-log cost issues start with diagnostic settings, not with Log Analytics itself.
+
 ### Azure Monitor service limits
 - URL: [Azure Monitor service limits](https://learn.microsoft.com/azure/azure-monitor/fundamentals/service-limits)
 - Use for: concurrency, rate, timeout, and result-size constraints.
@@ -73,6 +98,8 @@ Use the official table page plus the transformations and Basic Logs reference pa
 - Avoid `search *` and `union *` unless absolutely necessary.
 - Prefer shorter time windows for high-volume raw scans.
 - Be cautious with joins and high-cardinality summarize keys.
+- Review Workspace Insights and Query Audit regularly for recurring-query overhead.
+- Review Azure Advisor anomaly and Basic Logs recommendations alongside raw ingestion analysis.
 
 ## What This Means For “All Built-In Tables”
 You should think in two layers:

@@ -1,3 +1,4 @@
+// Automation-safe query.
 // Cheap active-table inventory using Usage.
 // This query is the safe bridge between the workspace's active tables and the
 // official Microsoft Learn table documentation.

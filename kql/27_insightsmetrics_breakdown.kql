@@ -1,0 +1,33 @@
+// Manual targeted drill-down for InsightsMetrics cost drivers.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetNamespace = "";
+let TargetMetricName = "";
+let TargetResourceId = "";
+InsightsMetrics
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| extend MetricNamespace = tostring(column_ifexists("Namespace", ""))
+| extend MetricName = tostring(column_ifexists("Name", ""))
+| extend OriginValue = tostring(column_ifexists("Origin", ""))
+| extend ComputerValue = tostring(column_ifexists("Computer", ""))
+| extend ResourceIdValue = tostring(column_ifexists("_ResourceId", ""))
+| where isempty(TargetNamespace) or MetricNamespace =~ TargetNamespace
+| where isempty(TargetMetricName) or MetricName =~ TargetMetricName
+| where isempty(TargetResourceId) or ResourceIdValue =~ TargetResourceId
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0
+  by ResourceId = ResourceIdValue, Computer = ComputerValue, Origin = OriginValue, Namespace = MetricNamespace, Name = MetricName
+| top TopN by GB desc
+| project
+    ResourceId,
+    Computer,
+    Origin,
+    Namespace,
+    Name,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2)

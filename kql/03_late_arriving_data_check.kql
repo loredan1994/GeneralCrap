@@ -1,3 +1,4 @@
+// Manual investigation only.
 // Compare Usage and raw ingestion timing for one table.
 // Edit TargetTable to the table you suspect is being backfilled or replayed.
 // This query is intended for targeted investigation, not broad multi-table use.
@@ -8,9 +9,11 @@ let Bucket = 1d;
 let WindowStart = startofday(ago(Lookback));
 let WindowEnd = startofday(now());
 let Raw =
-    table(TargetTable)
-    | where _TimeReceived >= WindowStart and _TimeReceived < WindowEnd
-    | where tolower(tostring(_IsBillable)) == "true";
+    materialize(
+        table(TargetTable)
+        | where _TimeReceived >= WindowStart and _TimeReceived < WindowEnd
+        | where tolower(tostring(_IsBillable)) == "true"
+    );
 let UsageByIngestionDay =
     Usage
     | where TimeGenerated > ago(32d)

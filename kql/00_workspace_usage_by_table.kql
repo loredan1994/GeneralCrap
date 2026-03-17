@@ -1,5 +1,6 @@
-// Rank billable tables across 1d, 7d, and 31d windows using the Usage table.
-// This is the default first query to run in a workspace.
+// Automation-safe query.
+// Rank billable tables across last-full-day, 7d, and 31d windows using Usage.
+// This is the default first query to run in a workspace for cost accounting.
 
 let TopN = 25;
 let CurrentEnd = startofday(now());

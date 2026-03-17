@@ -1,0 +1,35 @@
+// Manual targeted drill-down for ContainerLogV2 cost drivers.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetNamespace = "";
+let TargetContainerName = "";
+let TargetLogLevel = "";
+ContainerLogV2
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| extend KubernetesNamespace = tostring(coalesce(column_ifexists("PodNamespace", ""), column_ifexists("KubernetesNamespace", "")))
+| extend PodName = tostring(column_ifexists("PodName", ""))
+| extend ContainerName = tostring(column_ifexists("ContainerName", ""))
+| extend LogLevel = tostring(column_ifexists("LogLevel", ""))
+| extend LogSource = tostring(coalesce(column_ifexists("Stream", ""), column_ifexists("SourceSystem", "")))
+| extend ResourceId = tostring(column_ifexists("_ResourceId", ""))
+| where isempty(TargetNamespace) or KubernetesNamespace =~ TargetNamespace
+| where isempty(TargetContainerName) or ContainerName =~ TargetContainerName
+| where isempty(TargetLogLevel) or LogLevel =~ TargetLogLevel
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0
+  by ResourceId, KubernetesNamespace, PodName, ContainerName, LogLevel, LogSource
+| top TopN by GB desc
+| project
+    ResourceId,
+    KubernetesNamespace,
+    PodName,
+    ContainerName,
+    LogLevel,
+    LogSource,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2)

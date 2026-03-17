@@ -1,0 +1,29 @@
+// Manual targeted drill-down for Syslog cost drivers.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetComputer = "";
+let TargetFacility = "";
+let TargetSeverityLevel = "";
+let TargetProcessName = "";
+Syslog
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetFacility) or Facility =~ TargetFacility
+| where isempty(TargetSeverityLevel) or SeverityLevel =~ TargetSeverityLevel
+| where isempty(TargetProcessName) or ProcessName =~ TargetProcessName
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0
+  by Computer, Facility, SeverityLevel, ProcessName
+| top TopN by GB desc
+| project
+    Computer,
+    Facility,
+    SeverityLevel,
+    ProcessName,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2)

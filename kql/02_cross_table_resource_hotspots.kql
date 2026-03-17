@@ -1,3 +1,4 @@
+// Manual investigation only.
 // Aggregate recent billable data by Azure resource across all tables.
 // Use this when the same resource appears hot in multiple tables or when you
 // want to pivot from a table problem to a resource problem.

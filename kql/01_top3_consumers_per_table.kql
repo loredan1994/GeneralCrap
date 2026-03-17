@@ -1,3 +1,4 @@
+// Manual investigation only.
 // Generic cross-table drill-down.
 // Keep the lookback short because find scans raw data across many tables.
 // If you already know the target table, use 30_generic_table_dimension_scan.kql

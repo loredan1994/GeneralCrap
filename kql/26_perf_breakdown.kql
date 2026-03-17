@@ -1,0 +1,28 @@
+// Manual targeted drill-down for Perf cost drivers.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetComputer = "";
+let TargetObjectName = "";
+let TargetCounterName = "";
+Perf
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetObjectName) or ObjectName =~ TargetObjectName
+| where isempty(TargetCounterName) or CounterName =~ TargetCounterName
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0
+  by Computer, ObjectName, CounterName, CounterPath, InstanceName
+| top TopN by GB desc
+| project
+    Computer,
+    ObjectName,
+    CounterName,
+    CounterPath,
+    InstanceName,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2)

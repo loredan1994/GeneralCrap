@@ -1,0 +1,72 @@
+// Automation-safe query.
+// Weekly anomaly scan using Usage only. This is the preferred scheduled query
+// for surfacing tables whose recent ingestion materially exceeds baseline.
+
+let AnalysisDays = 35d;
+let RecentWindow = 7d;
+let BaselineWindow = 28d;
+let MinRecentTotalGB = 1.0;
+let MinGrowthX = 2.0;
+let TopN = 25;
+let WindowEnd = startofday(now());
+let RecentStart = startofday(ago(RecentWindow));
+let BaselineStart = startofday(ago(RecentWindow + BaselineWindow));
+let DailyUsage =
+    materialize(
+        Usage
+        | where TimeGenerated > ago(AnalysisDays + 2d)
+        | where IsBillable == true
+        | where StartTime >= BaselineStart and EndTime < WindowEnd
+        | summarize DailyGB = sum(Quantity) / 1000.0 by TableName = DataType, Day = bin(StartTime, 1d)
+    );
+let Recent =
+    DailyUsage
+    | where Day >= RecentStart
+    | summarize
+        RecentTotalGB = sum(DailyGB),
+        RecentAvgDailyGB = avg(DailyGB),
+        RecentMaxDailyGB = max(DailyGB),
+        RecentDays = dcount(Day)
+      by TableName;
+let Baseline =
+    DailyUsage
+    | where Day >= BaselineStart and Day < RecentStart
+    | summarize
+        BaselineAvgDailyGB = avg(DailyGB),
+        BaselineMaxDailyGB = max(DailyGB),
+        BaselineDays = dcount(Day)
+      by TableName;
+let LatestDay =
+    DailyUsage
+    | summarize arg_max(Day, DailyGB) by TableName
+    | project TableName, LatestDay = Day, LatestDayGB = DailyGB;
+Recent
+| join kind=leftouter Baseline on TableName
+| join kind=leftouter LatestDay on TableName
+| extend BaselineAvgDailyGB = coalesce(BaselineAvgDailyGB, 0.0)
+| extend BaselineMaxDailyGB = coalesce(BaselineMaxDailyGB, 0.0)
+| extend GrowthX = iff(BaselineAvgDailyGB == 0.0, real(null), round(RecentAvgDailyGB / BaselineAvgDailyGB, 2))
+| extend LatestDayVsBaselineX = iff(BaselineAvgDailyGB == 0.0, real(null), round(LatestDayGB / BaselineAvgDailyGB, 2))
+| extend TriggerReason = case(
+    isnull(GrowthX) and RecentTotalGB >= MinRecentTotalGB, "NewOrPreviouslyTinyTable",
+    GrowthX >= MinGrowthX, "RecentAvgAboveBaseline",
+    LatestDayVsBaselineX >= MinGrowthX, "LatestDaySpike",
+    "Review"
+)
+| where RecentTotalGB >= MinRecentTotalGB
+| where isnull(GrowthX) or GrowthX >= MinGrowthX or LatestDayVsBaselineX >= MinGrowthX
+| top TopN by RecentTotalGB desc
+| project
+    TableName,
+    TriggerReason,
+    RecentTotalGB = round(RecentTotalGB, 3),
+    RecentAvgDailyGB = round(RecentAvgDailyGB, 3),
+    RecentMaxDailyGB = round(RecentMaxDailyGB, 3),
+    BaselineAvgDailyGB = round(BaselineAvgDailyGB, 3),
+    BaselineMaxDailyGB = round(BaselineMaxDailyGB, 3),
+    GrowthX,
+    LatestDay,
+    LatestDayGB = round(LatestDayGB, 3),
+    LatestDayVsBaselineX,
+    RecentDays,
+    BaselineDays
