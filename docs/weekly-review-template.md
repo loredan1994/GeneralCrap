@@ -10,9 +10,18 @@
 - Top tables from `04`:
 - Top tables from `00`:
 - New anomalies from `05`:
+- Heartbeat stale resources:
 - Workspace Insights findings:
 - Query Audit findings:
 - Azure Advisor recommendations:
+
+## Resource Graph Governance Findings
+- Missing required tags:
+- Policy noncompliance:
+- Expiring exemptions:
+- Unattached public IPs:
+- Advisor cost savings opportunities:
+- Recent changes by actor:
 
 ## Manual Drill-Downs Performed
 | Table | Query file used | Why investigated | Main finding | Owner | Next action |
@@ -20,9 +29,9 @@
 |  |  |  |  |  |  |
 
 ## Candidate Cost Issues
-| Table | Consumer or dimension | Why it is expensive | Proposed fix | Priority | Status |
-| --- | --- | --- | --- | --- | --- |
-|  |  |  |  |  |  |
+| Surface | Table or entity | Consumer or dimension | Why it is expensive or risky | Proposed fix | Priority | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  |  |
 
 ## Risks And Follow-Up
 - Tables deferred:

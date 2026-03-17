@@ -1,0 +1,31 @@
+// Purpose: List resources missing the required owner, environment, or costCenter tags.
+// Engine: Azure Resource Graph
+// Lookback: current-state query
+// Expected table(s): Resources, ResourceContainers
+
+Resources
+| where type !startswith "microsoft.resources/"
+| extend
+    owner = tostring(tags["owner"]),
+    environment = tostring(tags["environment"]),
+    costCenter = tostring(tags["costCenter"])
+| where isempty(owner) or isempty(environment) or isempty(costCenter)
+| join kind=leftouter (
+    ResourceContainers
+    | where type == "microsoft.resources/subscriptions"
+    | project subscriptionId, subscriptionName = name
+) on subscriptionId
+| project
+    subscriptionName,
+    subscriptionId,
+    resourceGroup,
+    type,
+    name,
+    location,
+    MissingTags = strcat(
+        iff(isempty(owner), "owner;", ""),
+        iff(isempty(environment), "environment;", ""),
+        iff(isempty(costCenter), "costCenter;", "")
+    ),
+    id
+| order by subscriptionName asc, resourceGroup asc, name asc

@@ -10,19 +10,23 @@ Use a cheap weekly process to detect ingestion-cost regressions early, then esca
 4. Check Log Analytics Workspace Insights:
    - Usage tab for top tables and anomalies.
    - Query Audit for slow or inefficient recurring queries.
-5. Check Azure Advisor recommendations for the workspace:
+5. Run `kql/platform/43_heartbeat_stale_resources.kql`.
+6. Check Azure Advisor recommendations for the workspace:
    - data ingestion anomaly
    - Basic Logs eligibility
    - pricing tier change
    - restored table cleanup
-6. Record the results in `docs/weekly-review-template.md`.
-7. Escalate only the tables that cross threshold or show a new anomaly.
+7. Run the Resource Graph weekly governance checks.
+8. Record the results in `docs/weekly-review-template.md`.
+9. Escalate only the tables or governance findings that cross threshold or show a new anomaly.
 
 ## Safe Query Set
 Use these for scheduled runs, workbooks, or a weekly checklist:
 - `kql/core/04_active_table_inventory.kql`
 - `kql/core/00_workspace_usage_by_table.kql`
 - `kql/core/05_weekly_ingestion_anomalies_by_table.kql`
+- `kql/platform/43_heartbeat_stale_resources.kql`
+- `kql/core/06_usage_billable_volume_spike_by_table.kql`
 
 ## Manual Investigation Set
 Use these only after a hot table or resource has already been identified:
@@ -53,6 +57,21 @@ Use these only after a hot table or resource has already been identified:
 - VM performance counters: `kql/platform/26_perf_breakdown.kql`
 - Azure Monitor metrics stored in logs: `kql/platform/27_insightsmetrics_breakdown.kql`
 - If the hot VM event table is `Event`, use the classic Windows event path. If it is `WindowsEvent`, use the AMA or DCR path. Do not treat them as interchangeable because the schemas and likely collection controls are different.
+
+## AzureActivity Operator Pack
+- Failing control-plane churn: `kql/platform/40_activity_failed_control_plane_ops.kql`
+- Sensitive IAM, policy, and lock changes: `kql/platform/41_activity_sensitive_iam_policy_lock_changes.kql`
+- Deployment failure rate by caller: `kql/platform/42_activity_deployment_failure_rate_by_caller.kql`
+
+## Resource Graph Weekly Governance Checks
+- Missing required tags: `kql/resource-graph/60_arg_missing_required_tags.kql`
+- Policy noncompliance by assignment: `kql/resource-graph/62_arg_policy_noncompliance_by_assignment.kql`
+- Policy exemptions expiring in 90 days: `kql/resource-graph/63_arg_policy_exemptions_expiring_90d.kql`
+- Advisor cost savings summary: `kql/resource-graph/64_arg_advisor_cost_savings_summary.kql`
+- Unattached public IPs: `kql/resource-graph/61_arg_unattached_public_ips.kql`
+- Recent changes by actor: `kql/resource-graph/65_arg_recent_changes_by_actor.kql`
+
+Resource Graph queries are cheap governance and drift checks, but they are not Log Analytics ingestion queries. Treat `resourcechanges` as recent-drift analysis with a short history window, not long-term reporting.
 
 ## If Azure Monitor Shows Query Warnings
 - Reduce the time range first. Start at `1d` or `3d`, not `7d` or `31d`, for raw table scans.

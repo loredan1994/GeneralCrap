@@ -1,0 +1,20 @@
+// Purpose: Track RBAC, policy-assignment, and lock changes in the control plane.
+// Engine: Log Analytics
+// Lookback: 30d
+// Expected table(s): AzureActivity
+
+let Lookback = 30d;
+AzureActivity
+| where TimeGenerated >= ago(Lookback)
+| where OperationNameValue in~ (
+    "Microsoft.Authorization/roleAssignments/write",
+    "Microsoft.Authorization/roleAssignments/delete",
+    "Microsoft.Authorization/roleDefinitions/write",
+    "Microsoft.Authorization/roleDefinitions/delete",
+    "Microsoft.Authorization/policyAssignments/write",
+    "Microsoft.Authorization/policyAssignments/delete",
+    "Microsoft.Authorization/locks/write",
+    "Microsoft.Authorization/locks/delete"
+)
+| project TimeGenerated, Caller, CallerIpAddress, OperationNameValue, ActivityStatusValue, SubscriptionId, ResourceGroup, _ResourceId, CorrelationId
+| order by TimeGenerated desc

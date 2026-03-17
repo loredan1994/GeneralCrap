@@ -43,6 +43,7 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `docs/triage-notes-template.md`: Investigation worksheet for one suspected issue.
 - `docs/weekly-review-template.md`: Short weekly review artifact for recurring handoff.
 - `kql/README.md`: Folder map and quick starting points for the KQL library.
+- `docs/operator-pack-first-wave.md`: Operator-grade Azure Monitor and Resource Graph query pack for platform, governance, and drift questions.
 
 ## Folder Layout
 - `kql/core`: workspace-level and weekly-safe queries plus remediation verification.
@@ -50,7 +51,18 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/app`: app/runtime telemetry such as Functions and Application Insights.
 - `kql/platform`: Azure platform, control plane, container, and metrics/perf tables.
 - `kql/guest-os`: Windows and Linux guest log collection.
+- `kql/network`: network-focused queries such as Traffic Analytics.
+- `kql/resource-graph`: Azure Resource Graph governance, inventory, and recent-change queries.
 - `kql/security`: identity and security-focused tables.
+
+## Adjacent Operator Pack
+This repo now also includes a small operator-grade pack for stable Azure Monitor and Azure Resource Graph questions that are adjacent to cost triage but not limited to ingestion cost.
+
+See `docs/operator-pack-first-wave.md` for:
+- control-plane failure and IAM change queries
+- heartbeat and stale-agent checks
+- `NTANetAnalytics` network hygiene
+- Resource Graph governance, advisor, and recent-change queries
 
 ## Official Source of Truth
 This package is grounded in Microsoft Learn rather than a hard-coded opinionated list of tables.

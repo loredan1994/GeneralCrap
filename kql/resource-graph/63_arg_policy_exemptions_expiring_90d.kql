@@ -1,0 +1,17 @@
+// Purpose: Find policy exemptions expiring in the next 90 days.
+// Engine: Azure Resource Graph
+// Lookback: current-state query
+// Expected table(s): PolicyResources
+
+let Horizon = now() + 90d;
+PolicyResources
+| where type == "microsoft.authorization/policyexemptions"
+| extend
+    expiresOn = todatetime(properties.expiresOn),
+    displayName = tostring(properties.displayName),
+    exemptionCategory = tostring(properties.exemptionCategory),
+    scope = tostring(properties.scope)
+| where isnotnull(expiresOn)
+| where expiresOn >= now() and expiresOn < Horizon
+| project name, displayName, exemptionCategory, expiresOn, scope, id
+| order by expiresOn asc

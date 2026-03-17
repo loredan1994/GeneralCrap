@@ -64,6 +64,21 @@ This file is the official-source companion to the KQL package. It explains which
 - Use for: concurrency, rate, timeout, and result-size constraints.
 - Why it matters: workbook and dashboard design should respect these limits to avoid self-inflicted throttling.
 
+### Azure Resource Graph query language
+- URL: [Understanding the Azure Resource Graph query language](https://learn.microsoft.com/azure/governance/resource-graph/concepts/query-language)
+- Use for: supported tables, joins, and engine behavior in Resource Graph Explorer.
+- Why it matters: Resource Graph queries look similar to KQL but they run in a different engine and table universe than Log Analytics.
+
+### Azure Resource Graph table reference
+- URL: [Azure Resource Graph table and resource type reference](https://learn.microsoft.com/azure/governance/resource-graph/reference/supported-tables-resources)
+- Use for: confirming supported tables such as `Resources`, `PolicyResources`, and `AdvisorResources`.
+- Why it matters: this is the source of truth for current-state governance and inventory queries.
+
+### Change Analysis in Resource Graph
+- URL: [Get resource changes](https://learn.microsoft.com/azure/governance/resource-graph/changes/get-resource-changes)
+- Use for: `resourcechanges` schema, query examples, and recent-change analysis.
+- Why it matters: Microsoft documents that change analysis queries are for recent windows and should be treated as a short-retention drift tool.
+
 ## How To Use These References In Practice
 
 ### If you only know that costs are high
@@ -87,6 +102,12 @@ This file is the official-source companion to the KQL package. It explains which
 - `SecurityEvent`: use the `SecurityEvent` table page and sample queries for common high-volume event IDs.
 - `SigninLogs`: use the `SigninLogs` table page and sample queries to confirm app, resource, user, and result fields.
 - `AuditLogs`: use the `AuditLogs` table page to confirm activity, operation type, initiator, and target resource fields.
+
+### If the query is Resource Graph instead of Log Analytics
+1. Confirm the table on the Azure Resource Graph table reference page.
+2. Run the query in Resource Graph Explorer, not Log Analytics.
+3. For `resourcechanges`, keep the investigation window recent because Change Analysis is not a long-retention source.
+4. When adding joins, stay on subscription or resource ID keys and keep the projected columns tight.
 
 ### If you are deciding on a remediation
 Use the official table page plus the transformations and Basic Logs reference pages before you decide:

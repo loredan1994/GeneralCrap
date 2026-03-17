@@ -1,0 +1,36 @@
+// Purpose: Highlight tables whose recent billable ingestion jumped above baseline.
+// Engine: Log Analytics
+// Lookback: last completed day vs prior 7 completed days
+// Expected table(s): Usage
+
+let RecentStart = startofday(ago(1d));
+let RecentEnd = startofday(now());
+let BaselineStart = startofday(ago(8d));
+let BaselineEnd = RecentStart;
+let MinRecentMB = 500.0;
+let MinIncreasePct = 30.0;
+let Baseline =
+    Usage
+    | where StartTime >= BaselineStart and EndTime <= BaselineEnd
+    | where IsBillable == true
+    | project DataType, Quantity
+    | summarize BaselineMBPerDay = sum(Quantity) / 7.0 by DataType;
+let Recent =
+    Usage
+    | where StartTime >= RecentStart and EndTime <= RecentEnd
+    | where IsBillable == true
+    | project DataType, Quantity
+    | summarize RecentMB = sum(Quantity) by DataType;
+Recent
+| join kind=leftouter Baseline on DataType
+| extend BaselineMBPerDay = coalesce(BaselineMBPerDay, 0.0)
+| extend DeltaMB = RecentMB - BaselineMBPerDay
+| extend IncreasePct = iff(BaselineMBPerDay > 0, round(100.0 * DeltaMB / BaselineMBPerDay, 2), real(null))
+| where RecentMB > MinRecentMB and (IncreasePct > MinIncreasePct or isnull(IncreasePct))
+| project
+    TableName = DataType,
+    RecentGB = round(RecentMB / 1000.0, 3),
+    BaselineGBPerDay = round(BaselineMBPerDay / 1000.0, 3),
+    DeltaGB = round(DeltaMB / 1000.0, 3),
+    IncreasePct
+| order by RecentGB desc, IncreasePct desc nulls last

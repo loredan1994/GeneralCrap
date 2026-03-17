@@ -1,0 +1,21 @@
+// Purpose: Find resources that have stopped sending heartbeats.
+// Engine: Log Analytics
+// Lookback: 24h
+// Expected table(s): Heartbeat
+
+let Lookback = 24h;
+let StaleMinutes = 15;
+Heartbeat
+| where TimeGenerated >= ago(Lookback)
+| summarize
+    LastHeartbeat = max(TimeGenerated),
+    OSType = any(OSType),
+    OSName = any(OSName),
+    Environment = any(ComputerEnvironment),
+    ResourceId = any(_ResourceId),
+    SubscriptionId = any(SubscriptionId),
+    ResourceGroup = any(ResourceGroup)
+  by Computer
+| extend MinutesSinceHeartbeat = datetime_diff("minute", now(), LastHeartbeat)
+| where MinutesSinceHeartbeat > StaleMinutes
+| order by MinutesSinceHeartbeat desc

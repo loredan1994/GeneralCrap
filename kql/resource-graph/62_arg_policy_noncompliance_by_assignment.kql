@@ -1,0 +1,15 @@
+// Purpose: Summarize policy noncompliance by assignment and location.
+// Engine: Azure Resource Graph
+// Lookback: current policy state
+// Expected table(s): PolicyResources
+
+PolicyResources
+| where type == "microsoft.policyinsights/policystates"
+| extend
+    complianceState = tostring(properties.complianceState),
+    policyAssignmentName = tostring(properties.policyAssignmentName),
+    resourceId = tostring(properties.resourceId),
+    resourceLocation = tostring(properties.resourceLocation)
+| where complianceState == "NonCompliant"
+| summarize NonCompliantResources = dcount(resourceId), Findings = count() by policyAssignmentName, resourceLocation
+| order by NonCompliantResources desc, Findings desc

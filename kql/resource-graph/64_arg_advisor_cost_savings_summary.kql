@@ -1,0 +1,15 @@
+// Purpose: Summarize Azure Advisor cost recommendations by solution and estimated monthly savings.
+// Engine: Azure Resource Graph
+// Lookback: current recommendation set
+// Expected table(s): AdvisorResources
+
+AdvisorResources
+| where type == "microsoft.advisor/recommendations"
+| where tostring(properties.category) == "Cost"
+| extend
+    impactedResource = tostring(properties.resourceMetadata.resourceId),
+    savings = todouble(properties.extendedProperties.savingsAmount),
+    currency = tostring(properties.extendedProperties.savingsCurrency),
+    solution = tostring(properties.shortDescription.solution)
+| summarize ImpactedResources = dcount(impactedResource), MonthlySavings = round(sum(savings), 2) by solution, currency
+| order by MonthlySavings desc

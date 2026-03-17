@@ -1,0 +1,20 @@
+// Purpose: Summarize denied public or malicious flows by target, rule, and port.
+// Engine: Log Analytics
+// Lookback: 24h
+// Expected table(s): NTANetAnalytics
+
+let Lookback = 24h;
+NTANetAnalytics
+| where TimeGenerated >= ago(Lookback)
+| where SubType == "FlowLog"
+| where FlowStatus in~ ("Denied", "D")
+| where FlowType in~ ("ExternalPublic", "AzurePublic", "MaliciousFlow")
+| project TargetResourceId, NsgRule, DestPort, L7Protocol, FlowType, DeniedInFlows, DeniedOutFlows, SrcIp, DestIp, TimeGenerated
+| summarize
+    DeniedFlows = sum(tolong(coalesce(DeniedInFlows, 0)) + tolong(coalesce(DeniedOutFlows, 0))),
+    SourceIPs = dcount(SrcIp),
+    DestinationIPs = dcount(DestIp),
+    LastSeen = max(TimeGenerated)
+  by TargetResourceId, NsgRule, DestPort, L7Protocol, FlowType
+| where DeniedFlows > 0
+| order by DeniedFlows desc, LastSeen desc

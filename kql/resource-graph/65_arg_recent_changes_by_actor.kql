@@ -1,0 +1,18 @@
+// Purpose: Summarize recent resource changes by actor, client, and operation.
+// Engine: Azure Resource Graph
+// Lookback: 7d, subject to the 14d Change Analysis retention window
+// Expected table(s): resourcechanges
+
+resourcechanges
+| extend
+    changeTime = todatetime(properties.changeAttributes.timestamp),
+    changeType = tostring(properties.changeType),
+    targetResourceId = tostring(properties.targetResourceId),
+    targetResourceType = tostring(properties.targetResourceType),
+    changedBy = tostring(properties.changeAttributes.changedBy),
+    changedByType = tostring(properties.changeAttributes.changedByType),
+    clientType = tostring(properties.changeAttributes.clientType),
+    operation = tostring(properties.changeAttributes.operation)
+| where changeTime >= ago(7d)
+| summarize Changes = count(), LastChange = max(changeTime) by changedBy, changedByType, clientType, operation, changeType
+| order by Changes desc, LastChange desc

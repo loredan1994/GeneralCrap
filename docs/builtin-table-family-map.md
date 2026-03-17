@@ -30,9 +30,18 @@ Use this map when a hot table is unfamiliar and you need to decide which drill-d
 - VM and agent performance data:
   Examples: `Perf`, `InsightsMetrics`, `Heartbeat`
   Start with: `kql/platform/26_perf_breakdown.kql`, `kql/platform/27_insightsmetrics_breakdown.kql`
+- VM and agent operational health:
+  Examples: `Heartbeat`
+  Start with: `kql/platform/43_heartbeat_stale_resources.kql`
 - Azure control plane and governance:
   Examples: `AzureActivity`
   Start with: `kql/platform/24_azureactivity_breakdown.kql`
+- Workspace accounting and FinOps:
+  Examples: `Usage`
+  Start with: `kql/core/06_usage_billable_volume_spike_by_table.kql`
+- Network analytics:
+  Examples: `NTANetAnalytics`
+  Start with: `kql/network/50_nta_denied_public_flows.kql`
 - Identity platform sign-in logs:
   Examples: `SigninLogs`
   Start with: `kql/security/28_signinlogs_breakdown.kql`
@@ -58,3 +67,5 @@ Use this map when a hot table is unfamiliar and you need to decide which drill-d
 4. Pick 2 to 4 populated, high-signal columns.
 5. Adjust `kql/generic/32_builtin_table_drilldown_template.kql`.
 6. Only widen the time range if the short query stays healthy in Query Details.
+
+Resource Graph governance families are out of band from this map. Use `kql/resource-graph` for inventory, policy, Advisor, and recent-change questions.

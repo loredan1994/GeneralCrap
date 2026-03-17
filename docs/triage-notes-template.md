@@ -5,6 +5,7 @@
 - Investigator:
 - Workspace:
 - Subscription / tenant:
+- Query surface:
 - Trigger:
 - Severity:
 
@@ -24,6 +25,7 @@
 
 ## Drill-Down Evidence
 - Query files used:
+- Table or ARG entity used:
 - Official table docs checked:
 - Dominant dimensions:
 - Repeated messages or event signatures:
@@ -46,6 +48,7 @@
 ## Chosen Remediation
 - Fix owner:
 - Fix type:
+- Recurring use candidate:
 - Planned change:
 - Why this fix is supported by the official table attributes:
 - Expected savings:

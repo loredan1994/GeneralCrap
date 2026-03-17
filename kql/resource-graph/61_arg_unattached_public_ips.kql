@@ -1,0 +1,15 @@
+// Purpose: Identify public IP resources that are not attached to any IP configuration.
+// Engine: Azure Resource Graph
+// Lookback: current-state query
+// Expected table(s): Resources
+
+Resources
+| where type =~ "microsoft.network/publicipaddresses"
+| extend
+    ipConfigId = tostring(properties.ipConfiguration.id),
+    skuName = tostring(sku.name),
+    allocationMethod = tostring(properties.publicIPAllocationMethod),
+    ipAddress = tostring(properties.ipAddress)
+| where isempty(ipConfigId)
+| project subscriptionId, resourceGroup, name, location, skuName, allocationMethod, ipAddress, id
+| order by resourceGroup asc, name asc
