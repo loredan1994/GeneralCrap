@@ -1,10 +1,10 @@
 // Manual investigation only.
 // Generic cross-table drill-down.
-// Keep the lookback short because find scans raw data across many tables.
+// Keep the lookback very short because find scans raw data across many tables.
 // If you already know the target table, use 30_generic_table_dimension_scan.kql
 // or a table-specific query instead of trying to narrow this query.
 
-let Lookback = 1d;
+let Lookback = 12h;
 let TopN = 3;
 let ConsumerBreakdown =
     materialize(

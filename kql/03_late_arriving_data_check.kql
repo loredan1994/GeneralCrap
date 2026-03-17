@@ -4,7 +4,7 @@
 // This query is intended for targeted investigation, not broad multi-table use.
 
 let TargetTable = "FunctionAppLogs";
-let Lookback = 7d;
+let Lookback = 3d;
 let Bucket = 1d;
 let WindowStart = startofday(ago(Lookback));
 let WindowEnd = startofday(now());

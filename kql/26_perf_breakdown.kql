@@ -1,6 +1,6 @@
 // Manual targeted drill-down for Perf cost drivers.
 
-let Lookback = 7d;
+let Lookback = 3d;
 let TopN = 50;
 let TargetComputer = "";
 let TargetObjectName = "";

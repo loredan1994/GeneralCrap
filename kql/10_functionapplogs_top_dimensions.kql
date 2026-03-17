@@ -1,7 +1,7 @@
 // Break down FunctionAppLogs by the dimensions that usually explain cost:
 // app, function, category, and level.
 
-let Lookback = 7d;
+let Lookback = 3d;
 let TopN = 50;
 let TargetAppName = "";
 let TargetFunctionName = "";

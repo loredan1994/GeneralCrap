@@ -30,8 +30,11 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/26_perf_breakdown.kql`: `Perf` breakdown by computer, object, counter, and instance.
 - `kql/27_insightsmetrics_breakdown.kql`: `InsightsMetrics` breakdown by resource, origin, namespace, and metric name.
 - `kql/30_generic_table_dimension_scan.kql`: Generic dimension scan for any single built-in table selected after table ranking.
+- `kql/31_builtin_table_shape_probe.kql`: Probe for populated common dimensions in any built-in table before building a custom drill-down.
+- `kql/32_builtin_table_drilldown_template.kql`: Reusable short-window template for table-specific drill-downs.
 - `kql/90_remediation_verification.kql`: Before/after comparison and savings estimate after a fix.
 - `docs/microsoft-learn-reference-map.md`: Official Microsoft source map for built-in table discovery, per-table attributes, and optimization guidance.
+- `docs/builtin-table-family-map.md`: Quick family map for unfamiliar built-in tables.
 - `docs/sre-weekly-runbook.md`: Short weekly operating runbook for SRE teams.
 - `docs/triage-notes-template.md`: Investigation worksheet for one suspected issue.
 - `docs/weekly-review-template.md`: Short weekly review artifact for recurring handoff.
@@ -68,6 +71,7 @@ Use `Usage`:
 - `kql/00_workspace_usage_by_table.kql`
 
 This is the cheap path. Start from active tables, not the entire built-in catalog.
+Treat `LikelyTableClass` in `kql/04_active_table_inventory.kql` as a heuristic only. Active billable tables can include custom tables, so confirm built-in status against Microsoft Learn before using the built-in-table path.
 
 ## Operating Model
 
@@ -92,6 +96,7 @@ These rules are directly aligned to Microsoft’s Azure Monitor query optimizati
 - Use `Usage` for workspace-wide table ranking and use raw table scans only after you know which table is worth the cost.
 - Keep recurring dashboards and workbooks query-light. Large numbers of concurrent queries can hit Azure Monitor service limits.
 - For repeated long-range reporting, consider summary rules rather than rerunning wide raw scans.
+- Keep returned result sets small. Azure Monitor enforces record-count, size, concurrency, and timeout limits.
 
 ### Automation-Safe Versus Manual-Only
 Use these in scheduled reviews, workbooks, or weekly jobs:
@@ -110,7 +115,7 @@ Use these only for manual triage after a hot table or hot resource is already kn
 Run `kql/04_active_table_inventory.kql` first, then `kql/00_workspace_usage_by_table.kql`, then `kql/05_weekly_ingestion_anomalies_by_table.kql`.
 
 Use it to answer:
-- Which active built-in tables are present in this workspace?
+- Which active billable tables are present in this workspace, and which are likely built-in?
 - Which tables dominate the workspace right now?
 - Is the issue new in the last day, sustained over the last week, or simply large over the last month?
 - Which tables are growing versus the prior comparable window?
@@ -163,8 +168,9 @@ Use this sequence:
 Use this sequence:
 1. Open the Microsoft Learn table reference page for the table.
 2. Check the table columns, sample queries, and table attributes.
-3. Run `kql/30_generic_table_dimension_scan.kql` against that table.
-4. If the generic scan identifies a dominant dimension, build or adapt a table-specific query only for that table.
+3. Run `kql/31_builtin_table_shape_probe.kql` to see which common dimensions are actually populated.
+4. Run `kql/30_generic_table_dimension_scan.kql` against that table.
+5. If the generic scan identifies a dominant dimension, build or adapt a table-specific query only for that table.
 
 Use this path for unknown or newly encountered built-in tables so the workflow remains grounded in official schema and remains cheap.
 
@@ -349,6 +355,15 @@ After any remediation:
 - Review Log Analytics Workspace Insights for usage anomalies and Query Audit findings.
 - Review Azure Advisor recommendations for the workspace.
 
+## Warning And Limit Hygiene
+- If a query shows excessive-resource warnings, reduce time range before changing the query logic.
+- If Query Details shows queue time, review concurrent workbook, dashboard, or scheduled usage before assuming the query text is the only problem.
+- If a query is intended for recurring use, keep it on `Usage` where possible and avoid cross-table `find`.
+- If the table is Basic or Auxiliary, remember that recurring dashboard refreshes still incur query cost.
+- Keep workspace scope narrow. Cross-region and multi-workspace queries are more likely to warn or throttle.
+- Treat 100 seconds total CPU as the point where Microsoft considers a query resource-intensive, and 1,000 seconds as unacceptable for this package.
+- Before scheduling a new query, verify it in Query Details and reject it if it repeatedly appears in Workspace Insights Query Audit as slow or resource-intensive.
+
 ### After any incident or cost spike
 - Complete `triage-notes-template.md`.
 - Preserve the evidence query results.
@@ -362,9 +377,10 @@ Use this order unless you already know the exact failing table:
 3. `05_weekly_ingestion_anomalies_by_table.kql`
 4. `01_top3_consumers_per_table.kql` with `1d`
 5. `02_cross_table_resource_hotspots.kql` only if the issue appears resource-centric
-6. `30_generic_table_dimension_scan.kql` or a table-specific drill-down
-7. `03_late_arriving_data_check.kql` only if ingestion timing looks suspicious
-8. `90_remediation_verification.kql` after a fix
+6. `31_builtin_table_shape_probe.kql` for unfamiliar built-in tables
+7. `30_generic_table_dimension_scan.kql` or `32_builtin_table_drilldown_template.kql`
+8. `03_late_arriving_data_check.kql` only if ingestion timing looks suspicious
+9. `90_remediation_verification.kql` after a fix
 
 This order keeps most investigations on top of `Usage` and short-window raw scans, which is the lowest-cost path supported by Microsoft’s guidance.
 

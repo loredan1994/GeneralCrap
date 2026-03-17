@@ -100,6 +100,7 @@ Use the official table page plus the transformations and Basic Logs reference pa
 - Be cautious with joins and high-cardinality summarize keys.
 - Review Workspace Insights and Query Audit regularly for recurring-query overhead.
 - Review Azure Advisor anomaly and Basic Logs recommendations alongside raw ingestion analysis.
+- Keep recurring query sets within Azure Monitor limits for concurrency, queue time, result size, and timeout.
 
 ## What This Means For “All Built-In Tables”
 You should think in two layers:

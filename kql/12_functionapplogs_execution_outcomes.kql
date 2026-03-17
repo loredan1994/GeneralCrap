@@ -1,7 +1,7 @@
 // Parse Azure Functions execution summary messages to show invocations,
 // failure rate, duration, and billed size by function.
 
-let Lookback = 7d;
+let Lookback = 3d;
 let TopN = 30;
 let TargetAppName = "";
 let TargetFunctionName = "";

@@ -3,8 +3,9 @@
 // Use this when the same resource appears hot in multiple tables or when you
 // want to pivot from a table problem to a resource problem.
 
-let Lookback = 1d;
 let TopN = 25;
+// Widen only after confirming the query stays healthy in Query Details.
+let Lookback = 12h;
 let Raw =
     find withsource=TableName where TimeGenerated >= ago(Lookback)
     | project

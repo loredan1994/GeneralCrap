@@ -2,7 +2,7 @@
 // Common targets: AppTraces, AppExceptions, AppRequests, AppDependencies, OTelLogs, OTelTraces.
 
 let TargetTable = "AppTraces";
-let Lookback = 7d;
+let Lookback = 3d;
 let TopN = 50;
 let TargetAppRole = "";
 let TargetOperationName = "";

@@ -2,7 +2,7 @@
 // This is useful for retry loops, misconfiguration spam, poison queue churn,
 // and low-value repetitive informational logs.
 
-let Lookback = 7d;
+let Lookback = 3d;
 let TopN = 30;
 let TargetAppName = "";
 let TargetFunctionName = "";

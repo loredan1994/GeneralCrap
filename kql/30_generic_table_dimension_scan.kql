@@ -1,8 +1,8 @@
-// Generic cheap drill-down for any single built-in table chosen after Usage-based ranking.
+// Manual targeted drill-down for a single built-in table chosen after Usage-based ranking.
 // This avoids writing a new query from scratch when a hot table is unfamiliar.
 
 let TargetTable = "FunctionAppLogs";
-let Lookback = 3d;
+let Lookback = 1d;
 let TopN = 15;
 let Base =
     materialize(

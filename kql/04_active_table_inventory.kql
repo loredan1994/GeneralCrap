@@ -18,11 +18,13 @@ Base
     Solutions = make_set(Solution, 10)
   by TableName = DataType
 | extend SharePct = round(100.0 * GB / TotalGB, 2)
+| extend LikelyTableClass = iff(TableName endswith "_CL", "LikelyCustom", "LikelyBuiltinOrPlatform")
 | extend LikelyTableDocUrl = strcat("https://learn.microsoft.com/azure/azure-monitor/reference/tables/", tolower(TableName))
 | extend LikelySampleQueriesUrl = strcat("https://learn.microsoft.com/azure/azure-monitor/reference/queries/", tolower(TableName))
 | top TopN by GB desc
 | project
     TableName,
+    LikelyTableClass,
     GB = round(GB, 3),
     SharePct,
     HoursReported,
