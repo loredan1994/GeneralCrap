@@ -1,56 +1,42 @@
-// Manual cost view for a small set of hot tables.
-// Purpose: compare 90d ingestion history from Usage with the current 30d
-// retained footprint from raw billable records for selected tables.
-// Treat the 30d footprint as a visibility aid, not as a separate long-term
-// retention charge. Confirm actual table-level retention settings before you
-// assume AppExceptions or AppTraces follow the workspace default.
+// Safe accounting view for a small set of hot tables.
+// Purpose: compare 90d and 30d ingestion history from Usage without scanning
+// 30 days of raw events. Use 09_selected_tables_visible_footprint_raw.kql only
+// when you explicitly need a short-window raw visibility check.
 
 let SelectedTables = dynamic(["AppExceptions", "AppTraces", "StorageBlobLogs"]);
 let IngestionWindow = 90d;
-let FootprintWindow = 30d;
-let UsageView =
+let RecentWindow = 30d;
+let UsageByDay =
     Usage
     | where IsBillable == true
     | where StartTime >= startofday(ago(IngestionWindow)) and EndTime < startofday(now())
     | where DataType in (SelectedTables)
     | summarize
-        Ingested90dGB = sum(Quantity) / 1000.0,
-        Ingested30dGB = sumif(Quantity, StartTime >= startofday(ago(FootprintWindow))) / 1000.0,
-        LatestCompletedDayGB = sumif(Quantity, StartTime == startofday(ago(1d))) / 1000.0,
-        ActiveDays90d = dcount(StartTime)
-      by TableName = DataType;
-let FootprintView =
-    union isfuzzy=true
-    (
-        AppExceptions
-        | where TimeGenerated >= ago(FootprintWindow)
-        | where tolower(tostring(_IsBillable)) == "true"
-        | summarize Retained30dGB = sum(_BilledSize) / 1e9, Retained30dRows = count() by TableName = "AppExceptions"
-    ),
-    (
-        AppTraces
-        | where TimeGenerated >= ago(FootprintWindow)
-        | where tolower(tostring(_IsBillable)) == "true"
-        | summarize Retained30dGB = sum(_BilledSize) / 1e9, Retained30dRows = count() by TableName = "AppTraces"
-    ),
-    (
-        StorageBlobLogs
-        | where TimeGenerated >= ago(FootprintWindow)
-        | where tolower(tostring(_IsBillable)) == "true"
-        | summarize Retained30dGB = sum(_BilledSize) / 1e9, Retained30dRows = count() by TableName = "StorageBlobLogs"
-    );
-UsageView
-| join kind=leftouter FootprintView on TableName
-| extend Retained30dGB = coalesce(Retained30dGB, 0.0)
-| extend Retained30dRows = coalesce(Retained30dRows, 0)
-| extend AvgDailyIngest30dGB = round(iff(Ingested30dGB == 0.0, 0.0, Ingested30dGB / 30.0), 3)
+        DayGB = sum(Quantity) / 1000.0
+      by TableName = DataType, Day = StartTime;
+let Usage90d =
+    UsageByDay
+    | summarize
+        Ingested90dGB = sum(DayGB),
+        LatestCompletedDayGB = sumif(DayGB, Day == startofday(ago(1d))),
+        ActiveDays90d = dcount(Day)
+      by TableName;
+let Usage30d =
+    UsageByDay
+    | where Day >= startofday(ago(RecentWindow))
+    | summarize
+        Ingested30dGB = sum(DayGB),
+        AvgDailyIngest30dGB = avg(DayGB),
+        PeakDailyIngest30dGB = max(DayGB)
+      by TableName;
+Usage90d
+| join kind=leftouter Usage30d on TableName
 | order by Ingested90dGB desc
 | project
     TableName,
     Ingested90dGB = round(Ingested90dGB, 3),
-    Ingested30dGB = round(Ingested30dGB, 3),
-    AvgDailyIngest30dGB,
+    Ingested30dGB = round(coalesce(Ingested30dGB, 0.0), 3),
+    AvgDailyIngest30dGB = round(coalesce(AvgDailyIngest30dGB, 0.0), 3),
+    PeakDailyIngest30dGB = round(coalesce(PeakDailyIngest30dGB, 0.0), 3),
     LatestCompletedDayGB = round(LatestCompletedDayGB, 3),
-    Retained30dGB = round(Retained30dGB, 3),
-    Retained30dRows,
     ActiveDays90d

@@ -58,9 +58,9 @@ let TableTotals =
 ConsumerBreakdown
 | join kind=inner TableTotals on TableName
 | extend PctOfTable = round(100.0 * GB / TableGB, 2)
-| partition hint.strategy=native by TableName (
-    top TopN by GB desc
-)
+| sort by TableName asc, GB desc
+| serialize Rank = row_number(1, prev(TableName) != TableName)
+| where Rank <= TopN
 | order by TableGB desc, TableName asc, GB desc
 | project
     TableName,

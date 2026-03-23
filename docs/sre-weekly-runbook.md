@@ -36,6 +36,7 @@ Use these only after a hot table or resource has already been identified:
 - `kql/core/03_late_arriving_data_check.kql`
 - `kql/core/07_top5_largest_records_per_table.kql`
 - `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`
+- `kql/core/09_selected_tables_visible_footprint_raw.kql`
 - `kql/generic/30_generic_table_dimension_scan.kql`
 - the table-specific drill-down files under `kql/app`, `kql/platform`, `kql/guest-os`, and `kql/security`
 
@@ -68,8 +69,8 @@ Use these only after a hot table or resource has already been identified:
 - Microsoft Entra sign-in logs: `kql/security/28_signinlogs_breakdown.kql`
 - Microsoft Entra audit logs: `kql/security/29_auditlogs_breakdown.kql`
 - Workspace-based Application Insights and OTel tables: `kql/app/23_applicationinsights_builtin_breakdown.kql`
-- If `AppTraces` or `AppExceptions` is hot, start with `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`, then use `kql/app/13_apptraces_top_dimensions.kql`, `kql/app/14_apptraces_repeated_messages.kql`, `kql/app/15_appexceptions_top_dimensions.kql`, and `kql/app/16_appexceptions_problem_patterns.kql` as appropriate.
-- If `StorageBlobLogs` is hot, start with `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`, then use `kql/platform/28_storagebloblogs_top_dimensions.kql`, `kql/platform/29_storagebloblogs_callers_by_cost.kql`, and `kql/platform/30_storagebloblogs_requesters_by_cost.kql`.
+- If `AppTraces` or `AppExceptions` is hot, start with `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`, then use `kql/app/13_apptraces_top_dimensions.kql`, `kql/app/14_apptraces_repeated_messages.kql`, `kql/app/15_appexceptions_top_dimensions.kql`, and `kql/app/16_appexceptions_problem_patterns.kql` as appropriate. Use `14` only after setting at least one narrowing filter.
+- If `StorageBlobLogs` is hot, start with `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`, use `kql/core/09_selected_tables_visible_footprint_raw.kql` only if you explicitly need a short raw visibility check, then use `kql/platform/28_storagebloblogs_top_dimensions.kql`, `kql/platform/29_storagebloblogs_callers_by_cost.kql`, and `kql/platform/30_storagebloblogs_requesters_by_cost.kql`.
 - Azure control plane logs: `kql/platform/24_azureactivity_breakdown.kql`
 - AKS or container logs: `kql/platform/25_containerlogv2_breakdown.kql`
 - VM performance counters: `kql/platform/26_perf_breakdown.kql`
@@ -94,6 +95,7 @@ If `Resources`, `PolicyResources`, `AdvisorResources`, or `resourcechanges` fail
 
 ## If Azure Monitor Shows Query Warnings
 - Reduce the time range first. Start at `1d` or `3d`, not `7d` or `31d`, for raw table scans.
+- Microsoft currently treats queries processing more than `15d` as excessive resources, so keep raw drill-downs below that unless it is a deliberate one-off.
 - Move from `kql/core/01_top3_consumers_per_table.kql` or `kql/core/02_cross_table_resource_hotspots.kql` to a single-table drill-down as soon as the hot table or resource is known.
 - Use the Query Details pane and Query Audit to identify whether the query is CPU-heavy, queued, or returning too much data.
 - Break weekly automation into a small safe set. Do not put cross-table `find` queries on a frequent refresh.
@@ -103,7 +105,7 @@ If `Resources`, `PolicyResources`, `AdvisorResources`, or `resourcechanges` fail
 ## Guardrails
 - `00` and `04` use last full-day buckets. They are for accounting and weekly review, not real-time incident response.
 - `01` and `02` use cross-table `find`. Keep them short-window and manual.
-- Most targeted raw table drill-downs now default to `3d`. Expand only when the short window is insufficient.
+- Most targeted raw table drill-downs now default to `7d` or less. Expand only when the short window is insufficient, and treat anything over `15d` as likely to trigger excessive-resource warnings.
 - Prefer fixing noisy collection at source before using retention or plan changes.
 - Use Microsoft Learn table docs before changing Basic Logs, transformations, or diagnostic categories.
 

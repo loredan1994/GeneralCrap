@@ -2,6 +2,7 @@
 // Use this after 28_storagebloblogs_top_dimensions.kql when you need to know
 // which caller IPs or request patterns are creating the log volume.
 // Keep this window short on large workspaces. Use core/08 for 30d or 90d totals.
+// Use 30_storagebloblogs_requesters_by_cost.kql for workload identity hotspots.
 
 let Lookback = 7d;
 let TopN = 50;
@@ -14,9 +15,6 @@ StorageBlobLogs
 | where isempty(TargetOperationName) or OperationName =~ TargetOperationName
 | extend StatusCode = tostring(column_ifexists("StatusCode", ""))
 | extend Uri = tostring(column_ifexists("Uri", ""))
-| extend RequesterObjectId = tostring(column_ifexists("RequesterObjectId", ""))
-| extend RequesterAppId = tostring(column_ifexists("RequesterAppId", ""))
-| extend RequesterUpn = tostring(column_ifexists("RequesterUpn", ""))
 | extend UserAgentHeader = substring(tostring(column_ifexists("UserAgentHeader", "")), 0, 120)
 | extend ObjectKey = tostring(column_ifexists("ObjectKey", ""))
 | summarize
@@ -27,14 +25,11 @@ StorageBlobLogs
     DistinctUris = dcountif(Uri, isnotempty(Uri)),
     SampleUserAgent = any(UserAgentHeader),
     SampleObjectKey = any(ObjectKey)
-  by AccountName, CallerIpAddress, RequesterObjectId, RequesterAppId, RequesterUpn, AuthenticationType, OperationName, StatusCode, ResourceId = _ResourceId
+  by AccountName, CallerIpAddress, AuthenticationType, OperationName, StatusCode, ResourceId = _ResourceId
 | top TopN by GB desc
 | project
     AccountName,
     CallerIpAddress,
-    RequesterObjectId,
-    RequesterAppId,
-    RequesterUpn,
     AuthenticationType,
     OperationName,
     StatusCode,

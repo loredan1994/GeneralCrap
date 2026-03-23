@@ -1,9 +1,9 @@
 // Purpose: Track RBAC, policy-assignment, and lock changes in the control plane.
 // Engine: Log Analytics
-// Lookback: 30d
+// Lookback: 14d
 // Expected table(s): AzureActivity
 
-let Lookback = 30d;
+let Lookback = 14d;
 AzureActivity
 | where TimeGenerated >= ago(Lookback)
 | where OperationNameValue in~ (

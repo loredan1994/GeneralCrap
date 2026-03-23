@@ -16,7 +16,8 @@ Use this map when a hot table is unfamiliar and you need to decide which drill-d
   If `AppTraces` or `AppExceptions` is hot: `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`, then `docs/appinsights-storage-hot-tables-guide.md`
 - Storage resource logs:
   Examples: `StorageBlobLogs`, `StorageFileLogs`, `StorageQueueLogs`, `StorageTableLogs`
-  Start with: `kql/platform/28_storagebloblogs_top_dimensions.kql`
+  If `StorageBlobLogs` is hot: `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`, then `docs/appinsights-storage-hot-tables-guide.md`
+  Otherwise start with: `kql/platform/28_storagebloblogs_top_dimensions.kql`
   Follow with: `kql/platform/29_storagebloblogs_callers_by_cost.kql`, `kql/platform/30_storagebloblogs_requesters_by_cost.kql`
 - Windows event logs from MMA or legacy agent collection:
   Examples: `Event`

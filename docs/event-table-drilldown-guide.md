@@ -14,7 +14,7 @@ Use the classic `Event` table to identify which Windows events are driving inges
    This tells you which `Source`, `EventID`, `EventCategory`, `UserName`, or host dimension is really behind the noise.
 5. Run `kql/guest-os/37_event_trend_by_id.kql` or `kql/guest-os/44_event_spikes_by_signature_vs_baseline.kql`.
    This tells you whether the issue is bursty, recent, or steady-state.
-6. Run `kql/guest-os/36_event_repeated_descriptions.kql` only after you have narrowed the scope.
+6. Run `kql/guest-os/36_event_repeated_descriptions.kql` only after you have narrowed the scope and set at least one filter.
    This is the message-normalization step. Keep it short-window and filtered on larger workspaces.
 7. Run `kql/guest-os/41_event_payload_outliers.kql` if record size looks suspicious.
    This tells you whether the cost is row-count driven or inflated by large descriptions, raw event data, or parameter XML.

@@ -1,28 +1,29 @@
 # AppInsights And Storage Hot Tables Guide
 
 ## Goal
-Use this guide when `AppExceptions`, `AppTraces`, or `StorageBlobLogs` are among the largest tables and you want to understand ingestion over the last 90 days plus the current 30-day visible footprint.
+Use this guide when `AppExceptions`, `AppTraces`, or `StorageBlobLogs` are among the largest tables and you want to understand 90-day and 30-day ingestion from `Usage`, plus an optional short raw visibility check.
 
 ## Start Here
 1. Run [08_selected_tables_90d_ingestion_and_30d_footprint.kql](/Users/loredan/Downloads/GeneralCrap/kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql).
-2. Use the table-specific ladder below for the table that dominates.
+2. Run [09_selected_tables_visible_footprint_raw.kql](/Users/loredan/Downloads/GeneralCrap/kql/core/09_selected_tables_visible_footprint_raw.kql) only if you explicitly need a short raw visibility check.
+3. Use the table-specific ladder below for the table that dominates.
 
-The `Usage` query gives you the 30-day and 90-day accounting. The raw table drill-downs default to 7 days or less on purpose so they stay safer on large workspaces.
+The `Usage` query gives you the 30-day and 90-day accounting without scanning long raw windows. The raw table drill-downs default to 7 days or less on purpose so they stay safer on large workspaces. Microsoft’s current guidance says queries processing more than 15 days are considered excessive resources, so widen raw windows only for one-off checks after reviewing Query Details.
 
 ## What The Cost Query Shows
 - `Ingested90dGB`: billable ingestion over the last 90 days from `Usage`
 - `Ingested30dGB`: billable ingestion over the last 30 days from `Usage`
+- `AvgDailyIngest30dGB`: average completed day over the last 30 days from `Usage`
+- `PeakDailyIngest30dGB`: highest completed day over the last 30 days from `Usage`
 - `LatestCompletedDayGB`: last full day of ingestion from `Usage`
-- `Retained30dGB`: current 30-day visible footprint from raw billable records
-- `Retained30dRows`: current 30-day visible row count from raw billable records
 
-Treat `Retained30dGB` as a visibility metric, not as a billing metric.
-Use `Ingested90dGB`, `Ingested30dGB`, and `LatestCompletedDayGB` for ingestion-cost decisions.
-Check actual table-level retention settings before you assume `AppExceptions` or `AppTraces` follow the workspace default. These tables can be configured differently from the workspace baseline.
+Use `Ingested90dGB`, `Ingested30dGB`, `AvgDailyIngest30dGB`, `PeakDailyIngest30dGB`, and `LatestCompletedDayGB` for ingestion-cost decisions.
+Check actual table-level retention settings before you assume `AppExceptions` or `AppTraces` follow the workspace default. Microsoft documents Application Insights tables such as `AppExceptions` and `AppTraces` as 90-day default-retention tables at no charge unless you change their retention settings.
+If you explicitly need a short raw visibility check, run [09_selected_tables_visible_footprint_raw.kql](/Users/loredan/Downloads/GeneralCrap/kql/core/09_selected_tables_visible_footprint_raw.kql) manually and keep the window short.
 
 ## AppTraces
 1. Run [13_apptraces_top_dimensions.kql](/Users/loredan/Downloads/GeneralCrap/kql/app/13_apptraces_top_dimensions.kql)
-2. Run [14_apptraces_repeated_messages.kql](/Users/loredan/Downloads/GeneralCrap/kql/app/14_apptraces_repeated_messages.kql) after narrowing by app role or operation
+2. Run [14_apptraces_repeated_messages.kql](/Users/loredan/Downloads/GeneralCrap/kql/app/14_apptraces_repeated_messages.kql) only after setting at least one narrowing filter such as app role, operation, or severity
 3. If you need a generic Application Insights fallback, run [23_applicationinsights_builtin_breakdown.kql](/Users/loredan/Downloads/GeneralCrap/kql/app/23_applicationinsights_builtin_breakdown.kql) with `TargetTable = "AppTraces"`
 
 ## AppExceptions

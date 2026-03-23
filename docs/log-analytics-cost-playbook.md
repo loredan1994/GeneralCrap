@@ -18,13 +18,14 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/core/03_late_arriving_data_check.kql`: Ingestion-day vs event-time analysis for replay and delayed ingestion.
 - `kql/core/04_active_table_inventory.kql`: Cheap active-table inventory from `Usage`, including billable share and likely doc lookup URLs.
 - `kql/core/05_weekly_ingestion_anomalies_by_table.kql`: Automation-safe weekly anomaly scan based on `Usage`.
-- `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`: Focused 90d ingestion plus 30d visible-footprint view for `AppExceptions`, `AppTraces`, and `StorageBlobLogs`.
+- `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`: Focused 90d and 30d ingestion-accounting view from `Usage` for `AppExceptions`, `AppTraces`, and `StorageBlobLogs`.
+- `kql/core/09_selected_tables_visible_footprint_raw.kql`: Optional short-window raw visibility check for those same tables.
 - `kql/core/07_top5_largest_records_per_table.kql`: Manual-only top 5 largest billable records per table for short-window outlier detection.
 - `kql/app/10_functionapplogs_top_dimensions.kql`: `FunctionAppLogs` breakdown by app, function, category, and level.
 - `kql/app/11_functionapplogs_repeated_messages.kql`: Normalized repeated message signatures for noisy Functions logs.
 - `kql/app/12_functionapplogs_execution_outcomes.kql`: Function execution outcomes, failures, and duration.
 - `kql/app/13_apptraces_top_dimensions.kql`: `AppTraces` breakdown by app role, operation, severity, and referenced type.
-- `kql/app/14_apptraces_repeated_messages.kql`: Normalized repeated `AppTraces` signatures after narrowing by app role or operation.
+- `kql/app/14_apptraces_repeated_messages.kql`: Normalized repeated `AppTraces` signatures after narrowing by app role, operation, or severity.
 - `kql/app/15_appexceptions_top_dimensions.kql`: `AppExceptions` breakdown by app role, operation, exception type, and problem ID.
 - `kql/app/16_appexceptions_problem_patterns.kql`: `AppExceptions` payload and signature drill-down by problem ID and innermost type.
 - `kql/platform/20_azurediagnostics_breakdown.kql`: `AzureDiagnostics` breakdown by provider, type, category, operation, and resource.
@@ -33,7 +34,7 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/platform/30_storagebloblogs_requesters_by_cost.kql`: `StorageBlobLogs` requester identity hotspots by object ID, app ID, or UPN.
 - `kql/guest-os/21_event_breakdown.kql`: `Event` breakdown by event log, ID, level, and computer.
 - `kql/guest-os/35_event_source_breakdown.kql`: `Event` breakdown by source, user, host, and event ID.
-- `kql/guest-os/36_event_repeated_descriptions.kql`: Normalized repeated `Event` descriptions to catch chatty guest issues.
+- `kql/guest-os/36_event_repeated_descriptions.kql`: Normalized repeated `Event` descriptions to catch chatty guest issues after setting at least one narrowing filter.
 - `kql/guest-os/37_event_trend_by_id.kql`: `Event` bursts over time by event ID, source, and computer.
 - `kql/guest-os/38_event_hosts_by_volume.kql`: `Event` breakdown by host and log to find noisy machines.
 - `kql/guest-os/39_event_id_source_matrix.kql`: `Event` breakdown by event log, ID, and source across the estate.
@@ -284,7 +285,7 @@ For deeper Event investigations:
 3. Run `kql/guest-os/39_event_id_source_matrix.kql` to identify the dominant event ID and source combinations across the estate.
 4. Run `kql/guest-os/35_event_source_breakdown.kql` to see which source, user, or computer is producing the cost.
 5. Run `kql/guest-os/37_event_trend_by_id.kql` or `kql/guest-os/44_event_spikes_by_signature_vs_baseline.kql` to see whether the issue is bursty, newly spiking, or steady-state.
-6. Run `kql/guest-os/36_event_repeated_descriptions.kql` to identify repeated event signatures after normalizing numbers and GUIDs.
+6. Run `kql/guest-os/36_event_repeated_descriptions.kql` to identify repeated event signatures after setting at least one narrowing filter and then normalizing numbers and GUIDs.
 7. Run `kql/guest-os/41_event_payload_outliers.kql` when the issue looks like oversized descriptions, XML payloads, or unusually heavy records.
 8. Run `kql/guest-os/46_event_security_log_breakdown.kql` if the hot path is actually the classic Security log inside `Event`.
 9. Run `kql/guest-os/42_event_low_severity_tuning_candidates.kql` to surface `Information` and `Verbose` records that may be better filtered in the DCR.
@@ -395,15 +396,16 @@ If the hot table is specifically `AppTraces` or `AppExceptions`, use this sequen
 3. `kql/app/13_apptraces_top_dimensions.kql` and `kql/app/14_apptraces_repeated_messages.kql` for `AppTraces`
 4. `kql/app/15_appexceptions_top_dimensions.kql` and `kql/app/16_appexceptions_problem_patterns.kql` for `AppExceptions`
 
-Use `Ingested90dGB`, `Ingested30dGB`, and `LatestCompletedDayGB` from `Usage` for ingestion-cost decisions. Treat `Retained30dGB` as a visibility metric, not a billing metric.
+Use `Ingested90dGB`, `Ingested30dGB`, `AvgDailyIngest30dGB`, `PeakDailyIngest30dGB`, and `LatestCompletedDayGB` from `Usage` for ingestion-cost decisions. Use `kql/core/09_selected_tables_visible_footprint_raw.kql` only when you explicitly need a short raw visibility check.
 
 #### StorageBlobLogs
 Run this sequence:
 1. `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`
 2. `docs/appinsights-storage-hot-tables-guide.md`
-3. `kql/platform/28_storagebloblogs_top_dimensions.kql`
-4. `kql/platform/29_storagebloblogs_callers_by_cost.kql`
-5. `kql/platform/30_storagebloblogs_requesters_by_cost.kql`
+3. `kql/core/09_selected_tables_visible_footprint_raw.kql` only if you explicitly need a short raw visibility check
+4. `kql/platform/28_storagebloblogs_top_dimensions.kql`
+5. `kql/platform/29_storagebloblogs_callers_by_cost.kql`
+6. `kql/platform/30_storagebloblogs_requesters_by_cost.kql`
 
 What you are looking for:
 - One account or operation dominating ingestion.

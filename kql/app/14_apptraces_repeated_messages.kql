@@ -1,10 +1,12 @@
 // Manual targeted drill-down for repeated AppTraces message signatures.
 // Use this after 13_apptraces_top_dimensions.kql and narrow by AppRoleName or
 // OperationName first on larger workspaces.
+// The short default window is intentional because regex normalization is CPU-heavy.
 
-let Lookback = 1d;
+let Lookback = 12h;
 let TopN = 30;
-let MaxMessageLength = 240;
+let MaxMessageLength = 180;
+let RequireNarrowing = true;
 let TargetAppRole = "";
 let TargetOperationName = "";
 let TargetSeverity = "";
@@ -14,6 +16,7 @@ AppTraces
 | where isempty(TargetAppRole) or AppRoleName =~ TargetAppRole
 | where isempty(TargetOperationName) or OperationName =~ TargetOperationName
 | where isempty(TargetSeverity) or tostring(SeverityLevel) =~ TargetSeverity
+| where not(RequireNarrowing and isempty(TargetAppRole) and isempty(TargetOperationName) and isempty(TargetSeverity))
 | project AppRoleName, OperationName, Severity = tostring(SeverityLevel), _BilledSize, RawMessage = substring(tostring(coalesce(Message, "")), 0, MaxMessageLength)
 | where isnotempty(RawMessage)
 | extend NormalizedMessage = replace_regex(RawMessage, @"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}", "<guid>")

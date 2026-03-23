@@ -1,8 +1,9 @@
 // Manual targeted drill-down for AppExceptions problem patterns and payload size.
 // Use this after 15_appexceptions_top_dimensions.kql to see whether the table
 // is dominated by a small number of exception signatures or large exception details.
+// Narrow by app role or exception type first on larger workspaces.
 
-let Lookback = 7d;
+let Lookback = 3d;
 let TopN = 30;
 let TargetAppRole = "";
 let TargetExceptionType = "";

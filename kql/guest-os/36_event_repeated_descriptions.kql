@@ -2,10 +2,12 @@
 // Use this to spot chatty event signatures, retry loops, or repetitive guest issues.
 // Use 21_event_breakdown.kql or 35_event_source_breakdown.kql first, then set
 // at least one filter here before widening the window on a large workspace.
+// The short default window is intentional because regex normalization is CPU-heavy.
 
-let Lookback = 1d;
+let Lookback = 12h;
 let TopN = 30;
-let MaxDescriptionLength = 240;
+let MaxDescriptionLength = 180;
+let RequireNarrowing = true;
 let TargetComputer = "";
 let TargetEventLog = "";
 let TargetSource = "";
@@ -15,6 +17,7 @@ Event
 | where isempty(TargetComputer) or Computer =~ TargetComputer
 | where isempty(TargetEventLog) or EventLog =~ TargetEventLog
 | where isempty(TargetSource) or Source =~ TargetSource
+| where not(RequireNarrowing and isempty(TargetComputer) and isempty(TargetEventLog) and isempty(TargetSource))
 | project EventLog, EventID, EventLevelName, Source, Computer, _BilledSize, RawDescription = substring(tostring(coalesce(RenderedDescription, Message, "")), 0, MaxDescriptionLength)
 | where isnotempty(RawDescription)
 | extend NormalizedDescription = replace_regex(RawDescription, @"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}", "<guid>")

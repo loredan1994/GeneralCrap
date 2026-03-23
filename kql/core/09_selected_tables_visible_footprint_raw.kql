@@ -1,0 +1,31 @@
+// Manual investigation only.
+// Purpose: short-window raw visibility check for the selected hot tables.
+// Keep this short because raw scans over more than 15 days can trigger
+// excessive-resource warnings in Azure Monitor.
+
+let SelectedTables = dynamic(["AppExceptions", "AppTraces", "StorageBlobLogs"]);
+let Lookback = 7d;
+union isfuzzy=true
+(
+    AppExceptions
+    | where "AppExceptions" in (SelectedTables)
+    | where TimeGenerated >= ago(Lookback)
+    | where tolower(tostring(_IsBillable)) == "true"
+    | summarize VisibleGB = sum(_BilledSize) / 1e9, VisibleRows = count() by TableName = "AppExceptions"
+),
+(
+    AppTraces
+    | where "AppTraces" in (SelectedTables)
+    | where TimeGenerated >= ago(Lookback)
+    | where tolower(tostring(_IsBillable)) == "true"
+    | summarize VisibleGB = sum(_BilledSize) / 1e9, VisibleRows = count() by TableName = "AppTraces"
+),
+(
+    StorageBlobLogs
+    | where "StorageBlobLogs" in (SelectedTables)
+    | where TimeGenerated >= ago(Lookback)
+    | where tolower(tostring(_IsBillable)) == "true"
+    | summarize VisibleGB = sum(_BilledSize) / 1e9, VisibleRows = count() by TableName = "StorageBlobLogs"
+)
+| order by VisibleGB desc
+| project TableName, VisibleGB = round(VisibleGB, 3), VisibleRows

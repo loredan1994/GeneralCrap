@@ -19,6 +19,7 @@ For doc-only navigation, use [docs/README.md](/Users/loredan/Downloads/GeneralCr
 - Fast operator pack in Azure Resource Graph: `resource-graph/60_arg_missing_required_tags.kql`
 - Cross-table outlier hunt: `core/07_top5_largest_records_per_table.kql`
 - 90d/30d hot-table cost view: `core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`
+- Optional short-window raw visibility check for those tables: `core/09_selected_tables_visible_footprint_raw.kql`
 - Unknown built-in table: `generic/31_builtin_table_shape_probe.kql`, then `generic/30_generic_table_dimension_scan.kql`
 - Azure Functions: `app/10_functionapplogs_top_dimensions.kql`
 - AppTraces and AppExceptions: `app/13_apptraces_top_dimensions.kql`, `app/14_apptraces_repeated_messages.kql`, `app/15_appexceptions_top_dimensions.kql`, `app/16_appexceptions_problem_patterns.kql`
@@ -39,7 +40,7 @@ For doc-only navigation, use [docs/README.md](/Users/loredan/Downloads/GeneralCr
 - Which host or VM is noisy: `guest-os/38_event_hosts_by_volume.kql`
 - Which `EventID` and `Source` combination is noisy: `guest-os/39_event_id_source_matrix.kql`
 - Which host, user, or source needs deeper inspection: `guest-os/35_event_source_breakdown.kql`
-- Is the same message repeating: `guest-os/36_event_repeated_descriptions.kql`
+- Is the same message repeating: `guest-os/36_event_repeated_descriptions.kql` after setting at least one narrowing filter
 - Is it bursty or recently spiking: `guest-os/37_event_trend_by_id.kql` or `guest-os/44_event_spikes_by_signature_vs_baseline.kql`
 - Are a few records unusually large: `guest-os/41_event_payload_outliers.kql`
 - Are Security log events landing in `Event`: `guest-os/46_event_security_log_breakdown.kql`

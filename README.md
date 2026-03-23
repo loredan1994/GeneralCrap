@@ -41,7 +41,8 @@ flowchart LR
 ### App Insights And Storage Hot Tables
 1. [08_selected_tables_90d_ingestion_and_30d_footprint.kql](/Users/loredan/Downloads/GeneralCrap/kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql)
 2. [appinsights-storage-hot-tables-guide.md](/Users/loredan/Downloads/GeneralCrap/docs/appinsights-storage-hot-tables-guide.md)
-3. Use [30_storagebloblogs_requesters_by_cost.kql](/Users/loredan/Downloads/GeneralCrap/kql/platform/30_storagebloblogs_requesters_by_cost.kql) if `StorageBlobLogs` ownership is unclear from caller IP alone
+3. Use [09_selected_tables_visible_footprint_raw.kql](/Users/loredan/Downloads/GeneralCrap/kql/core/09_selected_tables_visible_footprint_raw.kql) only if you explicitly need a short raw visibility check
+4. Use [30_storagebloblogs_requesters_by_cost.kql](/Users/loredan/Downloads/GeneralCrap/kql/platform/30_storagebloblogs_requesters_by_cost.kql) if `StorageBlobLogs` ownership is unclear from caller IP alone
 
 ### Event Table Investigation
 1. [21_event_breakdown.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/21_event_breakdown.kql)
@@ -49,7 +50,7 @@ flowchart LR
 3. [38_event_hosts_by_volume.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/38_event_hosts_by_volume.kql)
 4. [39_event_id_source_matrix.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/39_event_id_source_matrix.kql) or [35_event_source_breakdown.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/35_event_source_breakdown.kql)
 5. [37_event_trend_by_id.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/37_event_trend_by_id.kql) or [44_event_spikes_by_signature_vs_baseline.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/44_event_spikes_by_signature_vs_baseline.kql)
-6. [36_event_repeated_descriptions.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/36_event_repeated_descriptions.kql)
+6. [36_event_repeated_descriptions.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/36_event_repeated_descriptions.kql) after setting at least one filter
 7. [41_event_payload_outliers.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/41_event_payload_outliers.kql) if record size looks suspicious
 8. [46_event_security_log_breakdown.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/46_event_security_log_breakdown.kql) if Security events are landing in `Event`
 9. [42_event_low_severity_tuning_candidates.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/42_event_low_severity_tuning_candidates.kql) for collection-tuning discussions
