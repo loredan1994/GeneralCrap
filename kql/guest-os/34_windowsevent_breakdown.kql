@@ -1,6 +1,8 @@
 // Manual targeted drill-down for WindowsEvent cost drivers.
 // Run this only if WindowsEvent exists in the workspace. If it does not,
 // start with Event instead. Examples of adjacent tables: Event, SecurityEvent.
+// If this returns no rows, run 43_windows_event_path_check.kql to confirm
+// whether the workspace is using Event, WindowsEvent, or SecurityEvent.
 
 let Lookback = 3d;
 let TopN = 50;

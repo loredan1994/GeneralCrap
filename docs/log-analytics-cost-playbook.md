@@ -32,6 +32,7 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/guest-os/40_event_log_level_mix.kql`: `Event` severity mix by log for collection-tuning decisions.
 - `kql/guest-os/41_event_payload_outliers.kql`: `Event` payload heaviness by event log, ID, and source.
 - `kql/guest-os/42_event_low_severity_tuning_candidates.kql`: High-volume `Information` or `Verbose` `Event` records that may be collection candidates.
+- `kql/guest-os/43_windows_event_path_check.kql`: Cheap `Usage`-based check for whether the workspace is using `Event`, `WindowsEvent`, or `SecurityEvent`.
 - `kql/guest-os/44_event_spikes_by_signature_vs_baseline.kql`: `Event` signature spikes versus recent baseline.
 - `kql/guest-os/46_event_security_log_breakdown.kql`: Windows Security log events when they land in `Event`.
 - `kql/guest-os/22_syslog_breakdown.kql`: `Syslog` breakdown by computer, facility, severity, and process.
@@ -296,6 +297,8 @@ Typical fixes:
 - Tighten DCR event selection by channel, provider, or event ID.
 - Remove noisy providers or low-value event streams.
 - Fix the emitting workload if one provider is generating repetitive errors or informational spam.
+
+If `WindowsEvent` returns no rows even on a wide window, run `kql/guest-os/43_windows_event_path_check.kql`. In many workspaces that is normal because Windows events are landing in `Event` or `SecurityEvent` instead of `WindowsEvent`.
 
 #### SecurityEvent
 Run `kql/security/33_securityevent_breakdown.kql`.

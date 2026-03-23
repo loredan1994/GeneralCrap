@@ -2,48 +2,43 @@
 // Purpose: Surface the largest individual billable records per table to spot outliers.
 // Keep the lookback short because find scans raw data across many tables.
 // If you already know the table, prefer a single-table drill-down instead.
-// This intentionally avoids a table-total join so it stays lighter for ad hoc use.
+// This intentionally avoids joins and partition so it stays lighter for ad hoc use.
 
 let Lookback = 12h;
 let TopN = 5;
-let Raw =
-    materialize(
-        find withsource=TableName where TimeGenerated >= ago(Lookback)
-        | project
-            TableName,
-            RecordTime = TimeGenerated,
-            BilledSize = toreal(column_ifexists("_BilledSize", 0.0)),
-            IsBillable = tolower(tostring(column_ifexists("_IsBillable", "true"))),
-            AppName = tostring(column_ifexists("AppName", "")),
-            ResourceId = tostring(column_ifexists("_ResourceId", "")),
-            Computer = tostring(column_ifexists("Computer", "")),
-            FunctionName = tostring(column_ifexists("FunctionName", "")),
-            Category = tostring(column_ifexists("Category", "")),
-            Level = tostring(column_ifexists("Level", "")),
-            EventIDPrimary = tostring(column_ifexists("EventID", "")),
-            EventIDSecondary = tostring(column_ifexists("EventId", "")),
-            OperationName = tostring(coalesce(
-                column_ifexists("OperationNameValue", ""),
-                column_ifexists("OperationName", ""),
-                column_ifexists("ActivityDisplayName", "")
-            )),
-            SampleText = substring(tostring(coalesce(
-                column_ifexists("Message", ""),
-                column_ifexists("RenderedDescription", ""),
-                column_ifexists("ResultDescription", ""),
-                column_ifexists("Description", "")
-            )), 0, 180)
-        | extend EventID = iff(isnotempty(EventIDPrimary), EventIDPrimary, EventIDSecondary)
-        | where TableName != "Usage"
-        | where IsBillable == "true"
-        | where BilledSize > 0
-    );
-Raw
+find withsource=TableName where TimeGenerated >= ago(Lookback)
+| project
+    TableName,
+    RecordTime = TimeGenerated,
+    BilledSize = toreal(column_ifexists("_BilledSize", 0.0)),
+    IsBillable = tolower(tostring(column_ifexists("_IsBillable", "true"))),
+    AppName = tostring(column_ifexists("AppName", "")),
+    ResourceId = tostring(column_ifexists("_ResourceId", "")),
+    Computer = tostring(column_ifexists("Computer", "")),
+    FunctionName = tostring(column_ifexists("FunctionName", "")),
+    Category = tostring(column_ifexists("Category", "")),
+    Level = tostring(column_ifexists("Level", "")),
+    EventIDPrimary = tostring(column_ifexists("EventID", "")),
+    EventIDSecondary = tostring(column_ifexists("EventId", "")),
+    OperationName = tostring(coalesce(
+        column_ifexists("OperationNameValue", ""),
+        column_ifexists("OperationName", ""),
+        column_ifexists("ActivityDisplayName", "")
+    )),
+    SampleText = substring(tostring(coalesce(
+        column_ifexists("Message", ""),
+        column_ifexists("RenderedDescription", ""),
+        column_ifexists("ResultDescription", ""),
+        column_ifexists("Description", "")
+    )), 0, 180)
+| extend EventID = iff(isnotempty(EventIDPrimary), EventIDPrimary, EventIDSecondary)
+| where TableName != "Usage"
+| where IsBillable == "true"
+| where BilledSize > 0
 | extend RecordMB = round(BilledSize / 1e6, 3)
-| partition hint.strategy=native by TableName (
-    top TopN by BilledSize desc
-)
-| order by TableName asc, BilledSize desc
+| sort by TableName asc, BilledSize desc
+| serialize Rank = row_number(1, prev(TableName) != TableName)
+| where Rank <= TopN
 | project
     TableName,
     RecordTime,

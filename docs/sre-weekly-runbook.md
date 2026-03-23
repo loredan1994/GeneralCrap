@@ -49,6 +49,7 @@ Use these only after a hot table or resource has already been identified:
 - Azure resource logs: `kql/platform/20_azurediagnostics_breakdown.kql` or `kql/generic/30_generic_table_dimension_scan.kql` for resource-specific tables
 - Windows guest OS logs, classic `Event` table: `kql/guest-os/21_event_breakdown.kql`
 - Event deep dive after a hot classic Event table is found: `kql/guest-os/40_event_log_level_mix.kql`, `kql/guest-os/38_event_hosts_by_volume.kql`, `kql/guest-os/39_event_id_source_matrix.kql`, `kql/guest-os/35_event_source_breakdown.kql`, `kql/guest-os/36_event_repeated_descriptions.kql`, `kql/guest-os/37_event_trend_by_id.kql`, `kql/guest-os/41_event_payload_outliers.kql`, `kql/guest-os/42_event_low_severity_tuning_candidates.kql`
+- If you are unsure whether the workspace uses `Event`, `WindowsEvent`, or `SecurityEvent`, run `kql/guest-os/43_windows_event_path_check.kql` first.
 - If `Event` is hot, use this ladder:
   `21_event_breakdown.kql` for the top-cost combinations
   `40_event_log_level_mix.kql` for severity mix

@@ -1,0 +1,16 @@
+// Cheap confirmation query for Windows event collection paths in this workspace.
+// Use this when WindowsEvent returns no rows and you need to know whether the
+// workspace is using Event, WindowsEvent, or SecurityEvent.
+
+let Lookback = 31d;
+Usage
+| where IsBillable == true
+| where StartTime >= startofday(ago(Lookback)) and EndTime < startofday(now())
+| where DataType in ("Event", "WindowsEvent", "SecurityEvent")
+| summarize
+    GB = sum(Quantity) / 1000.0,
+    ActiveDays = dcount(StartTime),
+    FirstSeen = min(StartTime),
+    LastSeen = max(StartTime)
+  by TableName = DataType
+| order by GB desc, TableName asc
