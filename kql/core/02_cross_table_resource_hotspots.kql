@@ -2,10 +2,12 @@
 // Aggregate recent billable data by Azure resource across all tables.
 // Use this when the same resource appears hot in multiple tables or when you
 // want to pivot from a table problem to a resource problem.
+// No rows usually means either no billable records carried _ResourceId in the
+// lookback window or the window is too short for the current workspace.
 
 let TopN = 25;
 // Widen only after confirming the query stays healthy in Query Details.
-let Lookback = 12h;
+let Lookback = 1d;
 let Raw =
     find withsource=TableName where TimeGenerated >= ago(Lookback)
     | project

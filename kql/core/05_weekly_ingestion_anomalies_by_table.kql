@@ -1,6 +1,8 @@
 // Automation-safe query.
 // Weekly anomaly scan using Usage only. This is the preferred scheduled query
 // for surfacing tables whose recent ingestion materially exceeds baseline.
+// No rows means no table crossed the current anomaly thresholds. Lower
+// MinRecentTotalGB or MinGrowthX if you want a broader review.
 
 let AnalysisDays = 35d;
 let RecentWindow = 7d;

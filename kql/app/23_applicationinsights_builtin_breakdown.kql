@@ -1,5 +1,6 @@
 // Manual targeted drill-down for workspace-based Application Insights and OTel tables.
-// Common targets: AppTraces, AppExceptions, AppRequests, AppDependencies, OTelLogs, OTelTraces.
+// Common targets for TargetTable: AppTraces, AppExceptions, AppRequests,
+// AppDependencies, OTelLogs, OTelTraces.
 
 let TargetTable = "AppTraces";
 let Lookback = 3d;
@@ -12,21 +13,32 @@ table(TargetTable)
 | where tolower(tostring(column_ifexists("_IsBillable", "true"))) == "true"
 | extend BilledSize = toreal(column_ifexists("_BilledSize", 0.0))
 | where BilledSize > 0
-| extend AppRole = tostring(coalesce(column_ifexists("AppRoleName", ""), column_ifexists("cloud_RoleName", "")))
-| extend OperationName = tostring(coalesce(column_ifexists("OperationName", ""), column_ifexists("operation_Name", "")))
-| extend Severity = tostring(coalesce(column_ifexists("SeverityLevel", ""), column_ifexists("severityLevel", "")))
-| extend ResultCode = tostring(coalesce(column_ifexists("ResultCode", ""), column_ifexists("resultCode", "")))
-| extend DependencyType = tostring(coalesce(column_ifexists("DependencyType", ""), column_ifexists("type", "")))
-| extend Success = tostring(coalesce(column_ifexists("Success", ""), column_ifexists("success", "")))
+| extend AppRoleCurrent = tostring(column_ifexists("AppRoleName", ""))
+| extend AppRoleLegacy = tostring(column_ifexists("cloud_RoleName", ""))
+| extend AppRole = iff(isnotempty(AppRoleCurrent), AppRoleCurrent, AppRoleLegacy)
+| extend OperationNameCurrent = tostring(column_ifexists("OperationName", ""))
+| extend OperationNameLegacy = tostring(column_ifexists("operation_Name", ""))
+| extend OperationName = iff(isnotempty(OperationNameCurrent), OperationNameCurrent, OperationNameLegacy)
+| extend SeverityCurrent = tostring(column_ifexists("SeverityLevel", ""))
+| extend SeverityLegacy = tostring(column_ifexists("severityLevel", ""))
+| extend Severity = iff(isnotempty(SeverityCurrent), SeverityCurrent, SeverityLegacy)
+| extend ResultCodeCurrent = tostring(column_ifexists("ResultCode", ""))
+| extend ResultCodeLegacy = tostring(column_ifexists("resultCode", ""))
+| extend ResultCode = iff(isnotempty(ResultCodeCurrent), ResultCodeCurrent, ResultCodeLegacy)
+| extend DependencyType = tostring(column_ifexists("DependencyType", ""))
+| extend SuccessCurrent = tostring(column_ifexists("Success", ""))
+| extend SuccessLegacy = tostring(column_ifexists("success", ""))
+| extend Success = iff(isnotempty(SuccessCurrent), SuccessCurrent, SuccessLegacy)
 | extend ResourceId = tostring(column_ifexists("_ResourceId", ""))
 | where isempty(TargetAppRole) or AppRole =~ TargetAppRole
 | where isempty(TargetOperationName) or OperationName =~ TargetOperationName
 | where isempty(TargetSeverity) or Severity =~ TargetSeverity
+| project TableName = TargetTable, BilledSize, AppRole, OperationName, Severity, ResultCode, DependencyType, Success, ResourceId
 | summarize
     Rows = count(),
     GB = sum(BilledSize) / 1e9,
     AvgKB = avg(BilledSize) / 1024.0
-  by TableName = TargetTable, AppRole, OperationName, Severity, ResultCode, DependencyType, Success, ResourceId
+  by TableName, AppRole, OperationName, Severity, ResultCode, DependencyType, Success, ResourceId
 | top TopN by GB desc
 | project
     TableName,

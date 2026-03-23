@@ -2,6 +2,9 @@
 // Engine: Azure Resource Graph
 // Lookback: current-state query
 // Expected table(s): Resources, ResourceContainers
+// Run in: Azure Resource Graph Explorer or az graph query.
+// If Resources fails to resolve, the query was run in Log Analytics.
+// No rows means no resources in scope are currently missing those tags.
 
 Resources
 | where type !startswith "microsoft.resources/"

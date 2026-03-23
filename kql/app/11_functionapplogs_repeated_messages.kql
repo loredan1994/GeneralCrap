@@ -1,9 +1,12 @@
 // Normalize noisy FunctionAppLogs messages to surface repeated signatures.
 // This is useful for retry loops, misconfiguration spam, poison queue churn,
 // and low-value repetitive informational logs.
+// Use kql/app/10_functionapplogs_top_dimensions.kql first, then set one or
+// more filters here before widening the window on a large workspace.
 
-let Lookback = 3d;
-let TopN = 30;
+let Lookback = 1d;
+let TopN = 20;
+let MaxMessageLength = 240;
 let TargetAppName = "";
 let TargetFunctionName = "";
 let TargetCategory = "";
@@ -15,16 +18,14 @@ FunctionAppLogs
 | where isempty(TargetFunctionName) or FunctionName =~ TargetFunctionName
 | where isempty(TargetCategory) or Category =~ TargetCategory
 | where isempty(TargetLevel) or Level =~ TargetLevel
-| extend RawMessage = coalesce(Message, "")
+| project AppName, FunctionName, Category, Level, _BilledSize, RawMessage = substring(tostring(coalesce(Message, "")), 0, MaxMessageLength)
+| where isnotempty(RawMessage)
 | extend NormalizedMessage = replace_regex(RawMessage, @"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}", "<guid>")
 | extend NormalizedMessage = replace_regex(NormalizedMessage, @"\b\d+\b", "<n>")
 | extend NormalizedMessage = replace_regex(NormalizedMessage, @"https?://\S+", "<url>")
-| summarize
+| summarize hint.shufflekey=NormalizedMessage
     Rows = count(),
     GB = sum(_BilledSize) / 1e9,
-    DistinctInvocationIds = dcount(FunctionInvocationId),
-    FirstSeen = min(TimeGenerated),
-    LastSeen = max(TimeGenerated),
     SampleMessage = any(RawMessage)
   by AppName, FunctionName, Category, Level, NormalizedMessage
 | top TopN by GB desc
@@ -35,8 +36,5 @@ FunctionAppLogs
     Level,
     GB = round(GB, 3),
     Rows,
-    DistinctInvocationIds,
-    FirstSeen,
-    LastSeen,
     NormalizedMessage,
     SampleMessage

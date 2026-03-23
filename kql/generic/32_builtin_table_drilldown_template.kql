@@ -1,5 +1,7 @@
 // Manual template for adjusting a drill-down to any built-in table after the
 // table doc and shape probe have identified the right dimensions.
+// Replace TargetTable with a known active built-in table such as
+// FunctionAppLogs, Event, AzureActivity, AppTraces, or SigninLogs.
 
 let TargetTable = "FunctionAppLogs";
 let Lookback = 1d;

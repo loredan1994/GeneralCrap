@@ -1,0 +1,35 @@
+// Manual targeted shortlist of likely Event collection-tuning candidates.
+// Use this after the Event signature queries when you need evidence for DCR or
+// XPath filtering discussions. It is biased toward high-volume informational or
+// warning events that may be operationally low value.
+
+let Lookback = 3d;
+let TopN = 50;
+let MinRows = 100;
+let TargetComputer = "";
+let TargetEventLog = "";
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| where EventLevelName in~ ("Information", "Informational", "Verbose", "Warning")
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    DistinctComputers = dcount(Computer),
+    SampleDescription = any(RenderedDescription)
+  by EventLog, Source, EventID, EventLevelName
+| where Rows >= MinRows
+| top TopN by GB desc
+| project
+    EventLog,
+    Source,
+    EventID,
+    EventLevelName,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    DistinctComputers,
+    SampleDescription

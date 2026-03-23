@@ -2,6 +2,9 @@
 // Engine: Azure Resource Graph
 // Lookback: current-state query
 // Expected table(s): PolicyResources
+// Run in: Azure Resource Graph Explorer or az graph query.
+// If PolicyResources fails to resolve, the query was run in Log Analytics.
+// No rows means no policy exemptions are expiring inside the current horizon.
 
 let Horizon = now() + 90d;
 PolicyResources

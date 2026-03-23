@@ -1,5 +1,7 @@
 // Compare a table before and after a remediation.
 // Edit the string literal and datetimes below for the specific investigation.
+// Replace TargetTable with a known active built-in table such as
+// FunctionAppLogs, Event, AzureDiagnostics, or SigninLogs.
 // AfterWindowStart should be later than BeforeWindowStart.
 
 let TargetTable = "FunctionAppLogs";

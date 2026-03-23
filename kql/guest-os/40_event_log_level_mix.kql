@@ -1,0 +1,31 @@
+// Manual targeted severity mix for the classic Event table.
+// Use this after 21_event_breakdown.kql to see whether the table is dominated
+// by Errors and Warnings or by lower-value Information and Verbose records.
+
+let Lookback = 3d;
+let TopN = 30;
+let TargetComputer = "";
+let TargetEventLog = "";
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    DistinctEventIDs = dcount(EventID),
+    DistinctSources = dcount(Source),
+    DistinctComputers = dcount(Computer)
+  by EventLog, EventLevelName
+| top TopN by GB desc
+| project
+    EventLog,
+    EventLevelName,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    DistinctEventIDs,
+    DistinctSources,
+    DistinctComputers

@@ -2,6 +2,9 @@
 // Engine: Azure Resource Graph
 // Lookback: 7d, subject to the 14d Change Analysis retention window
 // Expected table(s): resourcechanges
+// Run in: Azure Resource Graph Explorer or az graph query.
+// If resourcechanges fails to resolve, the query was run in Log Analytics.
+// No rows means no matching changes were found in the current window.
 
 resourcechanges
 | extend

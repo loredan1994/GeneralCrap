@@ -28,6 +28,15 @@
 | --- | --- | --- | --- | --- | --- |
 |  |  |  |  |  |  |
 
+## If Event Was Investigated
+- EventLog:
+- EventID:
+- Source:
+- Computer:
+- Repeated signature:
+- Trend note:
+- Payload-size note:
+
 ## Candidate Cost Issues
 | Surface | Table or entity | Consumer or dimension | Why it is expensive or risky | Proposed fix | Priority | Status |
 | --- | --- | --- | --- | --- | --- | --- |

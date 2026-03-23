@@ -1,0 +1,32 @@
+// Manual targeted outlier query for oversized Event records.
+// Use this when you suspect verbose payloads, repeated XML, or unusually large
+// descriptions are driving the Event table cost.
+
+let Lookback = 1d;
+let TopN = 25;
+let TargetComputer = "";
+let TargetEventLog = "";
+let TargetSource = "";
+let TargetEventID = int(-1);
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| where isempty(TargetSource) or Source =~ TargetSource
+| where TargetEventID == -1 or EventID == TargetEventID
+| project
+    TimeGenerated,
+    Computer,
+    ResourceId = _ResourceId,
+    EventLog,
+    Source,
+    EventID,
+    EventLevelName,
+    RecordMB = round(_BilledSize / 1e6, 3),
+    RenderedDescriptionLen = strlen(tostring(coalesce(RenderedDescription, ""))),
+    MessageLen = strlen(tostring(coalesce(Message, ""))),
+    EventDataLen = strlen(tostring(coalesce(EventData, ""))),
+    ParameterXmlLen = strlen(tostring(coalesce(ParameterXml, ""))),
+    Description = substring(tostring(coalesce(RenderedDescription, Message, "")), 0, 240)
+| top TopN by RecordMB desc

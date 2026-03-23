@@ -1,0 +1,44 @@
+// Manual targeted anomaly query for Event signatures.
+// Use this when the Event table is hot and you need to know which EventLog +
+// Source + EventID combinations jumped above their recent baseline.
+
+let TopN = 30;
+let MinRecentGB = 0.1;
+let MinGrowthX = 2.0;
+let WindowEnd = startofday(now());
+let RecentStart = startofday(ago(1d));
+let BaselineStart = startofday(ago(8d));
+let Daily =
+    materialize(
+        Event
+        | where TimeGenerated >= BaselineStart and TimeGenerated < WindowEnd
+        | where tolower(tostring(_IsBillable)) == "true"
+        | project Day = startofday(TimeGenerated), EventLog, Source, EventID, EventLevelName, BilledSize = _BilledSize
+        | summarize DailyGB = sum(BilledSize) / 1e9, DailyRows = count() by Day, EventLog, Source, EventID, EventLevelName
+    );
+let Recent =
+    Daily
+    | where Day >= RecentStart
+    | summarize RecentGB = sum(DailyGB), RecentRows = sum(DailyRows) by EventLog, Source, EventID, EventLevelName;
+let Baseline =
+    Daily
+    | where Day >= BaselineStart and Day < RecentStart
+    | summarize BaselineAvgDailyGB = avg(DailyGB), BaselineAvgDailyRows = avg(DailyRows) by EventLog, Source, EventID, EventLevelName;
+Recent
+| join kind=leftouter Baseline on EventLog, Source, EventID, EventLevelName
+| extend BaselineAvgDailyGB = coalesce(BaselineAvgDailyGB, 0.0)
+| extend BaselineAvgDailyRows = coalesce(BaselineAvgDailyRows, 0.0)
+| extend GrowthX = iff(BaselineAvgDailyGB == 0.0, real(null), round(RecentGB / BaselineAvgDailyGB, 2))
+| where RecentGB >= MinRecentGB
+| where isnull(GrowthX) or GrowthX >= MinGrowthX
+| top TopN by RecentGB desc
+| project
+    EventLog,
+    Source,
+    EventID,
+    EventLevelName,
+    RecentGB = round(RecentGB, 3),
+    RecentRows,
+    BaselineAvgDailyGB = round(BaselineAvgDailyGB, 3),
+    BaselineAvgDailyRows = round(BaselineAvgDailyRows, 1),
+    GrowthX

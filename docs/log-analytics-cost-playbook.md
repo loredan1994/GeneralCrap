@@ -27,6 +27,13 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/guest-os/35_event_source_breakdown.kql`: `Event` breakdown by source, user, host, and event ID.
 - `kql/guest-os/36_event_repeated_descriptions.kql`: Normalized repeated `Event` descriptions to catch chatty guest issues.
 - `kql/guest-os/37_event_trend_by_id.kql`: `Event` bursts over time by event ID, source, and computer.
+- `kql/guest-os/38_event_hosts_by_volume.kql`: `Event` breakdown by host and log to find noisy machines.
+- `kql/guest-os/39_event_id_source_matrix.kql`: `Event` breakdown by event log, ID, and source across the estate.
+- `kql/guest-os/40_event_log_level_mix.kql`: `Event` severity mix by log for collection-tuning decisions.
+- `kql/guest-os/41_event_payload_outliers.kql`: `Event` payload heaviness by event log, ID, and source.
+- `kql/guest-os/42_event_low_severity_tuning_candidates.kql`: High-volume `Information` or `Verbose` `Event` records that may be collection candidates.
+- `kql/guest-os/44_event_spikes_by_signature_vs_baseline.kql`: `Event` signature spikes versus recent baseline.
+- `kql/guest-os/46_event_security_log_breakdown.kql`: Windows Security log events when they land in `Event`.
 - `kql/guest-os/22_syslog_breakdown.kql`: `Syslog` breakdown by computer, facility, severity, and process.
 - `kql/app/23_applicationinsights_builtin_breakdown.kql`: Workspace-based Application Insights and OTel table breakdown.
 - `kql/platform/24_azureactivity_breakdown.kql`: `AzureActivity` breakdown by caller, provider, operation, and status.
@@ -38,14 +45,15 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/generic/30_generic_table_dimension_scan.kql`: Generic dimension scan for any single built-in table selected after table ranking.
 - `kql/generic/31_builtin_table_shape_probe.kql`: Probe for populated common dimensions in any built-in table before building a custom drill-down.
 - `kql/generic/32_builtin_table_drilldown_template.kql`: Reusable short-window template for table-specific drill-downs.
-- `kql/security/33_securityevent_breakdown.kql`: `SecurityEvent` breakdown by event ID, computer, activity, and target account.
-- `kql/guest-os/34_windowsevent_breakdown.kql`: `WindowsEvent` breakdown by channel, provider, event ID, and computer.
+- `kql/security/33_securityevent_breakdown.kql`: `SecurityEvent` breakdown by event ID, computer, activity, and target account, only if `SecurityEvent` is active in the workspace.
+- `kql/guest-os/34_windowsevent_breakdown.kql`: `WindowsEvent` breakdown by channel, provider, event ID, and computer, only if `WindowsEvent` is active in the workspace.
 - `kql/core/90_remediation_verification.kql`: Before/after comparison and savings estimate after a fix.
 - `docs/microsoft-learn-reference-map.md`: Official Microsoft source map for built-in table discovery, per-table attributes, and optimization guidance.
 - `docs/builtin-table-family-map.md`: Quick family map for unfamiliar built-in tables.
 - `docs/sre-weekly-runbook.md`: Short weekly operating runbook for SRE teams.
 - `docs/triage-notes-template.md`: Investigation worksheet for one suspected issue.
 - `docs/weekly-review-template.md`: Short weekly review artifact for recurring handoff.
+- `docs/event-table-drilldown-guide.md`: Short operator guide for deeper `Event` investigations.
 - `kql/README.md`: Folder map and quick starting points for the KQL library.
 - `docs/operator-pack-first-wave.md`: Operator-grade Azure Monitor and Resource Graph query pack for platform, governance, and drift questions.
 
@@ -261,14 +269,23 @@ Typical fixes:
 - Remove redundant event sources from collection rules.
 
 For deeper Event investigations:
-1. Run `kql/guest-os/35_event_source_breakdown.kql` to see which source, user, or computer is producing the cost.
-2. Run `kql/guest-os/36_event_repeated_descriptions.kql` to identify repeated event signatures after normalizing numbers and GUIDs.
-3. Run `kql/guest-os/37_event_trend_by_id.kql` to see whether the issue is bursty or steady-state.
+1. Run `kql/guest-os/40_event_log_level_mix.kql` to see whether the table is mostly `Error` and `Warning`, or mostly `Information` and `Verbose`.
+2. Run `kql/guest-os/38_event_hosts_by_volume.kql` to identify the noisiest computers and whether one host dominates one log.
+3. Run `kql/guest-os/39_event_id_source_matrix.kql` to identify the dominant event ID and source combinations across the estate.
+4. Run `kql/guest-os/35_event_source_breakdown.kql` to see which source, user, or computer is producing the cost.
+5. Run `kql/guest-os/37_event_trend_by_id.kql` or `kql/guest-os/44_event_spikes_by_signature_vs_baseline.kql` to see whether the issue is bursty, newly spiking, or steady-state.
+6. Run `kql/guest-os/36_event_repeated_descriptions.kql` to identify repeated event signatures after normalizing numbers and GUIDs.
+7. Run `kql/guest-os/41_event_payload_outliers.kql` when the issue looks like oversized descriptions, XML payloads, or unusually heavy records.
+8. Run `kql/guest-os/46_event_security_log_breakdown.kql` if the hot path is actually the classic Security log inside `Event`.
+9. Run `kql/guest-os/42_event_low_severity_tuning_candidates.kql` to surface `Information` and `Verbose` records that may be better filtered in the DCR.
+
+If `Event` is dominated by `Information` or `Verbose` records, Microsoft’s current VM guidance is to start with `Critical`, `Error`, and `Warning` for the `System` and `Application` logs, and add `Information` only when you need it for troubleshooting or trend analysis.
 
 #### WindowsEvent
 Run `kql/guest-os/34_windowsevent_breakdown.kql`.
 
 Use this for AMA or DCR-style Windows event collection where the table exposes `Channel`, `Provider`, and parsed event payload fields.
+Do this only if `WindowsEvent` is an active table in the workspace. If the query would otherwise fail or return nothing in a workspace that only uses the classic schema, switch to `Event` first.
 
 What you are looking for:
 - One `Channel` or `Provider` dominating ingestion.
@@ -284,6 +301,7 @@ Typical fixes:
 Run `kql/security/33_securityevent_breakdown.kql`.
 
 Use this for Windows security audit events, especially logons, account management, process execution, and policy change activity.
+Do this only if `SecurityEvent` is an active table in the workspace. If the workspace does not have `SecurityEvent`, check whether the same security events are routed to `Event` instead or whether the security-specific connector path is not enabled.
 
 What you are looking for:
 - One `EventID` dominating the table, such as repetitive logon success or failure events.

@@ -17,6 +17,7 @@ Use this map when a hot table is unfamiliar and you need to decide which drill-d
   Examples: `Event`
   Start with: `kql/guest-os/21_event_breakdown.kql`
   Use when the table has `EventLog`, `Source`, `RenderedDescription`, and other classic Windows event fields.
+  Deep dive with: `kql/guest-os/40_event_log_level_mix.kql`, `kql/guest-os/38_event_hosts_by_volume.kql`, `kql/guest-os/39_event_id_source_matrix.kql`, `kql/guest-os/35_event_source_breakdown.kql`, `kql/guest-os/36_event_repeated_descriptions.kql`, `kql/guest-os/37_event_trend_by_id.kql`, `kql/guest-os/41_event_payload_outliers.kql`, `kql/guest-os/42_event_low_severity_tuning_candidates.kql`, `kql/guest-os/44_event_spikes_by_signature_vs_baseline.kql`, `kql/guest-os/46_event_security_log_breakdown.kql`
 - Windows event logs from AMA or DCR-style collection:
   Examples: `WindowsEvent`
   Start with: `kql/guest-os/34_windowsevent_breakdown.kql`
@@ -54,7 +55,7 @@ Use this map when a hot table is unfamiliar and you need to decide which drill-d
   Use when the table is focused on security auditing, logons, account changes, policy changes, and security-relevant Windows events.
 
 ## Event Family Distinctions
-- `Event`: classic Windows Event Log collection. Use when the workspace contains the legacy `Event` table and you need to group by `EventLog`, `EventID`, `EventLevelName`, and `Computer`.
+- `Event`: classic Windows Event Log collection. Use when the workspace contains the legacy `Event` table and you need to group by `EventLog`, `EventID`, `EventLevelName`, and `Computer`. Follow with log-level mix, host volume, ID/source matrix, repeated descriptions, trend, payload outliers, and low-severity tuning candidates as needed.
 - `WindowsEvent`: newer Windows event collection shape with `Channel`, `Provider`, and parsed event payload support. Use when the table name is explicitly `WindowsEvent`.
 - `SecurityEvent`: Windows security auditing data. Use this when you care about sign-ins, privilege changes, process creation, policy changes, or account activity on Windows hosts.
 - `SigninLogs`: Microsoft Entra sign-in activity. Start with app, user, result, and conditional access status.

@@ -2,6 +2,9 @@
 // Engine: Azure Resource Graph
 // Lookback: current policy state
 // Expected table(s): PolicyResources
+// Run in: Azure Resource Graph Explorer or az graph query.
+// If PolicyResources fails to resolve, the query was run in Log Analytics.
+// No rows means no noncompliant policy states were found in scope.
 
 PolicyResources
 | where type == "microsoft.policyinsights/policystates"

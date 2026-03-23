@@ -2,6 +2,8 @@
 // Engine: Log Analytics
 // Lookback: last completed day vs prior 7 completed days
 // Expected table(s): Usage
+// No rows means no table crossed the default MinRecentMB and MinIncreasePct
+// thresholds for the latest completed day.
 
 let RecentStart = startofday(ago(1d));
 let RecentEnd = startofday(now());

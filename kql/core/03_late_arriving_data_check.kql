@@ -1,6 +1,8 @@
 // Manual investigation only.
 // Compare Usage and raw ingestion timing for one table.
 // Edit TargetTable to the table you suspect is being backfilled or replayed.
+// Replace TargetTable with a known active built-in table such as
+// FunctionAppLogs, Event, AzureDiagnostics, or AzureActivity.
 // This query is intended for targeted investigation, not broad multi-table use.
 
 let TargetTable = "FunctionAppLogs";

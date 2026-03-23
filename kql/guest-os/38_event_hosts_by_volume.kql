@@ -1,0 +1,40 @@
+// Manual targeted drill-down for Event cost by host and resource.
+// Use this after 21_event_breakdown.kql when you need to identify the noisiest
+// computers or VM resources behind the Event table volume.
+
+let Lookback = 3d;
+let TopN = 50;
+let TargetEventLog = "";
+let TargetSource = "";
+let TargetEventID = int(-1);
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| where isempty(TargetSource) or Source =~ TargetSource
+| where TargetEventID == -1 or EventID == TargetEventID
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    DistinctEventIDs = dcount(EventID),
+    DistinctSources = dcount(Source),
+    ErrorRows = countif(EventLevelName =~ "Error"),
+    WarningRows = countif(EventLevelName =~ "Warning"),
+    InfoRows = countif(EventLevelName in~ ("Information", "Informational"))
+  by Computer, ResourceId = _ResourceId, EventLog
+| extend ErrorPct = iff(Rows == 0, 0.0, round(100.0 * todouble(ErrorRows) / todouble(Rows), 2))
+| top TopN by GB desc
+| project
+    Computer,
+    ResourceId,
+    EventLog,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    DistinctEventIDs,
+    DistinctSources,
+    ErrorRows,
+    WarningRows,
+    InfoRows,
+    ErrorPct

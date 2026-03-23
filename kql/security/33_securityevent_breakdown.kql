@@ -1,11 +1,41 @@
 // Manual targeted drill-down for SecurityEvent cost drivers.
+// Run this only if SecurityEvent exists in the workspace. If it does not,
+// check whether security events are routed to Event instead.
 
 let Lookback = 3d;
 let TopN = 50;
 let TargetComputer = "";
 let TargetEventID = int(-1);
 let TargetActivity = "";
-SecurityEvent
+union isfuzzy=true
+(
+    SecurityEvent
+    | project
+        TimeGenerated,
+        _IsBillable = tostring(_IsBillable),
+        _BilledSize = toreal(_BilledSize),
+        Computer = tostring(Computer),
+        EventID = toint(EventID),
+        Activity = tostring(Activity),
+        LogonTypeName = tostring(LogonTypeName),
+        TargetAccount = tostring(TargetAccount),
+        EventSourceName = tostring(EventSourceName),
+        Channel = tostring(Channel)
+),
+(
+    datatable(
+        TimeGenerated:datetime,
+        _IsBillable:string,
+        _BilledSize:real,
+        Computer:string,
+        EventID:int,
+        Activity:string,
+        LogonTypeName:string,
+        TargetAccount:string,
+        EventSourceName:string,
+        Channel:string
+    )[]
+)
 | where TimeGenerated >= ago(Lookback)
 | where tolower(tostring(_IsBillable)) == "true"
 | where isempty(TargetComputer) or Computer =~ TargetComputer

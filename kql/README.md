@@ -12,17 +12,32 @@
 
 ## Recommended Starting Points
 - Weekly review: `core/04_active_table_inventory.kql`, `core/00_workspace_usage_by_table.kql`, `core/05_weekly_ingestion_anomalies_by_table.kql`
-- Fast operator pack: `core/06_usage_billable_volume_spike_by_table.kql`, `platform/40_activity_failed_control_plane_ops.kql`, `resource-graph/60_arg_missing_required_tags.kql`
+- Fast operator pack in Log Analytics: `core/06_usage_billable_volume_spike_by_table.kql`, `platform/40_activity_failed_control_plane_ops.kql`
+- Fast operator pack in Azure Resource Graph: `resource-graph/60_arg_missing_required_tags.kql`
 - Cross-table outlier hunt: `core/07_top5_largest_records_per_table.kql`
 - Unknown built-in table: `generic/31_builtin_table_shape_probe.kql`, then `generic/30_generic_table_dimension_scan.kql`
 - Azure Functions: `app/10_functionapplogs_top_dimensions.kql`
-- Windows VM events: `guest-os/21_event_breakdown.kql` or `guest-os/34_windowsevent_breakdown.kql`
-- Event deep dive: `guest-os/35_event_source_breakdown.kql`, `guest-os/36_event_repeated_descriptions.kql`, `guest-os/37_event_trend_by_id.kql`
-- Identity and security: `security/28_signinlogs_breakdown.kql`, `security/29_auditlogs_breakdown.kql`, `security/33_securityevent_breakdown.kql`
+- Windows VM events: `guest-os/21_event_breakdown.kql`, or `guest-os/34_windowsevent_breakdown.kql` only if `WindowsEvent` exists
+- Event deep dive: `guest-os/40_event_log_level_mix.kql`, `guest-os/38_event_hosts_by_volume.kql`, `guest-os/39_event_id_source_matrix.kql`, `guest-os/35_event_source_breakdown.kql`, `guest-os/36_event_repeated_descriptions.kql`, `guest-os/37_event_trend_by_id.kql`, `guest-os/41_event_payload_outliers.kql`, `guest-os/42_event_low_severity_tuning_candidates.kql`, `guest-os/44_event_spikes_by_signature_vs_baseline.kql`, `guest-os/46_event_security_log_breakdown.kql`
+- Identity and security: `security/28_signinlogs_breakdown.kql`, `security/29_auditlogs_breakdown.kql`, `security/33_securityevent_breakdown.kql` only if `SecurityEvent` exists
 
 ## Query Surfaces
 - `core/`, `generic/`, `app/`, `platform/`, `guest-os/`, `security/`, and `network/` run in Log Analytics.
 - `resource-graph/` runs in Azure Resource Graph, not in Log Analytics.
+- If `Resources`, `PolicyResources`, `AdvisorResources`, or `resourcechanges` fails to resolve, you ran an ARG query in the wrong surface.
+
+## Event Quick Map
+- What costs the most in `Event`: `guest-os/21_event_breakdown.kql`
+- Is the table mostly high or low severity: `guest-os/40_event_log_level_mix.kql`
+- Which host or VM is noisy: `guest-os/38_event_hosts_by_volume.kql`
+- Which `EventID` and `Source` combination is noisy: `guest-os/39_event_id_source_matrix.kql`
+- Which host, user, or source needs deeper inspection: `guest-os/35_event_source_breakdown.kql`
+- Is the same message repeating: `guest-os/36_event_repeated_descriptions.kql`
+- Is it bursty or recently spiking: `guest-os/37_event_trend_by_id.kql` or `guest-os/44_event_spikes_by_signature_vs_baseline.kql`
+- Are a few records unusually large: `guest-os/41_event_payload_outliers.kql`
+- Are Security log events landing in `Event`: `guest-os/46_event_security_log_breakdown.kql`
+- What should we consider filtering: `guest-os/42_event_low_severity_tuning_candidates.kql`
+- If the workspace uses `WindowsEvent` instead, switch to `guest-os/34_windowsevent_breakdown.kql`
 
 ## Naming
 - `00-05`: cheap-first workspace and weekly triage flow

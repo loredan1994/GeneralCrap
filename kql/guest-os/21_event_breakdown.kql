@@ -1,4 +1,6 @@
 // Rank Event records by the dimensions that usually explain cost.
+// Follow with 38_event_hosts_by_volume.kql or 39_event_id_source_matrix.kql
+// depending on whether host or signature detail is the next question.
 
 let Lookback = 3d;
 let TopN = 50;

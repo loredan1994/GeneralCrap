@@ -17,6 +17,7 @@ Use a cheap weekly process to detect ingestion-cost regressions early, then esca
    - pricing tier change
    - restored table cleanup
 7. Run the Resource Graph weekly governance checks.
+   Run them in Resource Graph Explorer or `az graph query`, not in the Log Analytics query blade.
 8. Record the results in `docs/weekly-review-template.md`.
 9. Escalate only the tables or governance findings that cross threshold or show a new anomaly.
 
@@ -47,9 +48,20 @@ Use these only after a hot table or resource has already been identified:
 - Azure Functions and App Service runtime logs: `kql/app/10_*`, `kql/app/11_*`, `kql/app/12_*`
 - Azure resource logs: `kql/platform/20_azurediagnostics_breakdown.kql` or `kql/generic/30_generic_table_dimension_scan.kql` for resource-specific tables
 - Windows guest OS logs, classic `Event` table: `kql/guest-os/21_event_breakdown.kql`
-- Event deep dive after a hot classic Event table is found: `kql/guest-os/35_event_source_breakdown.kql`, `kql/guest-os/36_event_repeated_descriptions.kql`, `kql/guest-os/37_event_trend_by_id.kql`
-- Windows guest OS logs, AMA or DCR `WindowsEvent` table: `kql/guest-os/34_windowsevent_breakdown.kql`
-- Windows security audit events: `kql/security/33_securityevent_breakdown.kql`
+- Event deep dive after a hot classic Event table is found: `kql/guest-os/40_event_log_level_mix.kql`, `kql/guest-os/38_event_hosts_by_volume.kql`, `kql/guest-os/39_event_id_source_matrix.kql`, `kql/guest-os/35_event_source_breakdown.kql`, `kql/guest-os/36_event_repeated_descriptions.kql`, `kql/guest-os/37_event_trend_by_id.kql`, `kql/guest-os/41_event_payload_outliers.kql`, `kql/guest-os/42_event_low_severity_tuning_candidates.kql`
+- If `Event` is hot, use this ladder:
+  `21_event_breakdown.kql` for the top-cost combinations
+  `40_event_log_level_mix.kql` for severity mix
+  `38_event_hosts_by_volume.kql` for noisy hosts
+  `39_event_id_source_matrix.kql` for noisy `EventID` and `Source` pairs
+  `35_event_source_breakdown.kql` for source, user, and host detail
+  `37_event_trend_by_id.kql` or `44_event_spikes_by_signature_vs_baseline.kql` for burst vs baseline
+  `36_event_repeated_descriptions.kql` only after narrowing the scope
+  `41_event_payload_outliers.kql` if record size looks suspicious
+  `46_event_security_log_breakdown.kql` if the hot path is the Security log inside `Event`
+  `42_event_low_severity_tuning_candidates.kql` when preparing collection-tuning changes
+- Windows guest OS logs, AMA or DCR `WindowsEvent` table: `kql/guest-os/34_windowsevent_breakdown.kql` only if active table inventory shows `WindowsEvent`
+- Windows security audit events: `kql/security/33_securityevent_breakdown.kql` only if active table inventory shows `SecurityEvent`
 - Linux guest OS logs: `kql/guest-os/22_syslog_breakdown.kql`
 - Microsoft Entra sign-in logs: `kql/security/28_signinlogs_breakdown.kql`
 - Microsoft Entra audit logs: `kql/security/29_auditlogs_breakdown.kql`
@@ -74,6 +86,7 @@ Use these only after a hot table or resource has already been identified:
 - Recent changes by actor: `kql/resource-graph/65_arg_recent_changes_by_actor.kql`
 
 Resource Graph queries are cheap governance and drift checks, but they are not Log Analytics ingestion queries. Treat `resourcechanges` as recent-drift analysis with a short history window, not long-term reporting.
+If `Resources`, `PolicyResources`, `AdvisorResources`, or `resourcechanges` fails to resolve, the query was run in Log Analytics instead of Azure Resource Graph.
 
 ## If Azure Monitor Shows Query Warnings
 - Reduce the time range first. Start at `1d` or `3d`, not `7d` or `31d`, for raw table scans.
@@ -81,6 +94,7 @@ Resource Graph queries are cheap governance and drift checks, but they are not L
 - Use the Query Details pane and Query Audit to identify whether the query is CPU-heavy, queued, or returning too much data.
 - Break weekly automation into a small safe set. Do not put cross-table `find` queries on a frequent refresh.
 - For unknown built-in tables, run `kql/generic/31_builtin_table_shape_probe.kql` before building a custom drill-down.
+- If `kql/core/05_weekly_ingestion_anomalies_by_table.kql` or `kql/core/06_usage_billable_volume_spike_by_table.kql` returns no rows, that usually means no table crossed the current thresholds, not that the query failed.
 
 ## Guardrails
 - `00` and `04` use last full-day buckets. They are for accounting and weekly review, not real-time incident response.
@@ -109,3 +123,4 @@ Resource Graph queries are cheap governance and drift checks, but they are not L
 - chosen next action
 - deferred risks
 - verification date
+- If `Event` was investigated, capture `EventLog`, `EventID`, `Source`, `Computer`, and whether the pattern was repeated, bursty, or payload-heavy.

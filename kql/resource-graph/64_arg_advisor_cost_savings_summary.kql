@@ -2,6 +2,9 @@
 // Engine: Azure Resource Graph
 // Lookback: current recommendation set
 // Expected table(s): AdvisorResources
+// Run in: Azure Resource Graph Explorer or az graph query.
+// If AdvisorResources fails to resolve, the query was run in Log Analytics.
+// No rows means no cost recommendations were returned in scope.
 
 AdvisorResources
 | where type == "microsoft.advisor/recommendations"

@@ -2,6 +2,9 @@
 // Engine: Azure Resource Graph
 // Lookback: current-state query
 // Expected table(s): Resources
+// Run in: Azure Resource Graph Explorer or az graph query.
+// If Resources fails to resolve, the query was run in Log Analytics.
+// No rows means no unattached public IPs were found in scope.
 
 Resources
 | where type =~ "microsoft.network/publicipaddresses"

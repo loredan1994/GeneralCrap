@@ -1,8 +1,11 @@
 // Manual targeted drill-down for repeated Event descriptions.
 // Use this to spot chatty event signatures, retry loops, or repetitive guest issues.
+// Use 21_event_breakdown.kql or 35_event_source_breakdown.kql first, then set
+// at least one filter here before widening the window on a large workspace.
 
-let Lookback = 3d;
-let TopN = 50;
+let Lookback = 1d;
+let TopN = 30;
+let MaxDescriptionLength = 240;
 let TargetComputer = "";
 let TargetEventLog = "";
 let TargetSource = "";
@@ -12,24 +15,24 @@ Event
 | where isempty(TargetComputer) or Computer =~ TargetComputer
 | where isempty(TargetEventLog) or EventLog =~ TargetEventLog
 | where isempty(TargetSource) or Source =~ TargetSource
-| extend Description = coalesce(RenderedDescription, Message, "")
-| extend Description = replace_regex(Description, @"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}", "<guid>")
-| extend Description = replace_regex(Description, @"\b\d+\b", "<n>")
-| summarize
+| project EventLog, EventID, EventLevelName, Source, Computer, _BilledSize, RawDescription = substring(tostring(coalesce(RenderedDescription, Message, "")), 0, MaxDescriptionLength)
+| where isnotempty(RawDescription)
+| extend NormalizedDescription = replace_regex(RawDescription, @"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}", "<guid>")
+| extend NormalizedDescription = replace_regex(NormalizedDescription, @"\b\d+\b", "<n>")
+| summarize hint.shufflekey=NormalizedDescription
     Rows = count(),
     GB = sum(_BilledSize) / 1e9,
-    AvgKB = avg(_BilledSize) / 1024.0,
-    SampleDescription = any(RenderedDescription)
-  by EventLog, EventID, EventLevelName, Source, Computer, Description
+    SampleDescription = any(RawDescription),
+    ExampleComputer = any(Computer)
+  by EventLog, EventID, EventLevelName, Source, NormalizedDescription
 | top TopN by GB desc
 | project
     EventLog,
     EventID,
     EventLevelName,
     Source,
-    Computer,
+    ExampleComputer,
     GB = round(GB, 3),
     Rows,
-    AvgKB = round(AvgKB, 2),
-    Description,
+    NormalizedDescription,
     SampleDescription

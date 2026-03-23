@@ -1,5 +1,7 @@
 // Manual targeted drill-down for a single built-in table chosen after Usage-based ranking.
 // This avoids writing a new query from scratch when a hot table is unfamiliar.
+// Replace TargetTable with a known active built-in table such as
+// FunctionAppLogs, Event, AzureActivity, AppTraces, or SigninLogs.
 
 let TargetTable = "FunctionAppLogs";
 let Lookback = 1d;
@@ -17,7 +19,9 @@ let Base =
         | extend Category = tostring(column_ifexists("Category", ""))
         | extend Level = tostring(column_ifexists("Level", ""))
         | extend OperationName = tostring(column_ifexists("OperationName", ""))
-        | extend EventID = tostring(column_ifexists("EventID", column_ifexists("EventId", "")))
+        | extend EventIDPrimary = tostring(column_ifexists("EventID", ""))
+        | extend EventIDSecondary = tostring(column_ifexists("EventId", ""))
+        | extend EventID = iff(isnotempty(EventIDPrimary), EventIDPrimary, EventIDSecondary)
     );
 union
 (

@@ -1,0 +1,39 @@
+// Manual targeted drill-down for the main Event signature before message-based analysis.
+// Use this after 21_event_breakdown.kql or 38_event_hosts_by_volume.kql.
+// It is intentionally cheaper than description normalization because it groups
+// on EventLog, Source, EventID, EventLevelName, and EventCategory only.
+
+let Lookback = 3d;
+let TopN = 50;
+let TargetComputer = "";
+let TargetEventLog = "";
+let TargetSource = "";
+let TargetEventID = int(-1);
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| where isempty(TargetSource) or Source =~ TargetSource
+| where TargetEventID == -1 or EventID == TargetEventID
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    DistinctComputers = dcount(Computer),
+    DistinctUsers = dcountif(UserName, isnotempty(UserName)),
+    SampleDescription = any(RenderedDescription)
+  by EventLog, Source, EventID, EventLevelName, EventCategory
+| top TopN by GB desc
+| project
+    EventLog,
+    Source,
+    EventID,
+    EventLevelName,
+    EventCategory,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    DistinctComputers,
+    DistinctUsers,
+    SampleDescription

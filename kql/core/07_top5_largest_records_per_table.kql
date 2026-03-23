@@ -2,6 +2,7 @@
 // Purpose: Surface the largest individual billable records per table to spot outliers.
 // Keep the lookback short because find scans raw data across many tables.
 // If you already know the table, prefer a single-table drill-down instead.
+// This intentionally avoids a table-total join so it stays lighter for ad hoc use.
 
 let Lookback = 12h;
 let TopN = 5;
@@ -19,7 +20,8 @@ let Raw =
             FunctionName = tostring(column_ifexists("FunctionName", "")),
             Category = tostring(column_ifexists("Category", "")),
             Level = tostring(column_ifexists("Level", "")),
-            EventID = tostring(column_ifexists("EventID", column_ifexists("EventId", ""))),
+            EventIDPrimary = tostring(column_ifexists("EventID", "")),
+            EventIDSecondary = tostring(column_ifexists("EventId", "")),
             OperationName = tostring(coalesce(
                 column_ifexists("OperationNameValue", ""),
                 column_ifexists("OperationName", ""),
@@ -31,26 +33,21 @@ let Raw =
                 column_ifexists("ResultDescription", ""),
                 column_ifexists("Description", "")
             )), 0, 180)
+        | extend EventID = iff(isnotempty(EventIDPrimary), EventIDPrimary, EventIDSecondary)
         | where TableName != "Usage"
         | where IsBillable == "true"
         | where BilledSize > 0
     );
-let TableTotals =
-    Raw
-    | summarize TableGB = sum(BilledSize) / 1e9 by TableName;
 Raw
-| join kind=inner TableTotals on TableName
 | extend RecordMB = round(BilledSize / 1e6, 3)
-| extend PctOfTable = round(100.0 * (BilledSize / 1e9) / TableGB, 2)
 | partition hint.strategy=native by TableName (
     top TopN by BilledSize desc
 )
-| order by TableGB desc, TableName asc, BilledSize desc
+| order by TableName asc, BilledSize desc
 | project
     TableName,
     RecordTime,
     RecordMB,
-    PctOfTable,
     AppName,
     FunctionName,
     Category,
