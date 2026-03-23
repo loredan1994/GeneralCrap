@@ -35,6 +35,7 @@ Use these only after a hot table or resource has already been identified:
 - `kql/core/02_cross_table_resource_hotspots.kql`
 - `kql/core/03_late_arriving_data_check.kql`
 - `kql/core/07_top5_largest_records_per_table.kql`
+- `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`
 - `kql/generic/30_generic_table_dimension_scan.kql`
 - the table-specific drill-down files under `kql/app`, `kql/platform`, `kql/guest-os`, and `kql/security`
 
@@ -67,6 +68,8 @@ Use these only after a hot table or resource has already been identified:
 - Microsoft Entra sign-in logs: `kql/security/28_signinlogs_breakdown.kql`
 - Microsoft Entra audit logs: `kql/security/29_auditlogs_breakdown.kql`
 - Workspace-based Application Insights and OTel tables: `kql/app/23_applicationinsights_builtin_breakdown.kql`
+- If `AppTraces` or `AppExceptions` is hot, start with `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`, then use `kql/app/13_apptraces_top_dimensions.kql`, `kql/app/14_apptraces_repeated_messages.kql`, `kql/app/15_appexceptions_top_dimensions.kql`, and `kql/app/16_appexceptions_problem_patterns.kql` as appropriate.
+- If `StorageBlobLogs` is hot, start with `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`, then use `kql/platform/28_storagebloblogs_top_dimensions.kql`, `kql/platform/29_storagebloblogs_callers_by_cost.kql`, and `kql/platform/30_storagebloblogs_requesters_by_cost.kql`.
 - Azure control plane logs: `kql/platform/24_azureactivity_breakdown.kql`
 - AKS or container logs: `kql/platform/25_containerlogv2_breakdown.kql`
 - VM performance counters: `kql/platform/26_perf_breakdown.kql`

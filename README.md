@@ -6,6 +6,7 @@ Use this repo to identify ingestion-cost problems in Azure Monitor Logs, drill i
 - Weekly SRE review: [docs/sre-weekly-runbook.md](/Users/loredan/Downloads/GeneralCrap/docs/sre-weekly-runbook.md)
 - Full investigation flow: [docs/log-analytics-cost-playbook.md](/Users/loredan/Downloads/GeneralCrap/docs/log-analytics-cost-playbook.md)
 - `Event` table deep dive: [docs/event-table-drilldown-guide.md](/Users/loredan/Downloads/GeneralCrap/docs/event-table-drilldown-guide.md)
+- App Insights and Storage hot tables: [docs/appinsights-storage-hot-tables-guide.md](/Users/loredan/Downloads/GeneralCrap/docs/appinsights-storage-hot-tables-guide.md)
 - Unknown built-in table: [docs/builtin-table-family-map.md](/Users/loredan/Downloads/GeneralCrap/docs/builtin-table-family-map.md)
 - Official Microsoft source map: [docs/microsoft-learn-reference-map.md](/Users/loredan/Downloads/GeneralCrap/docs/microsoft-learn-reference-map.md)
 - Query library map: [kql/README.md](/Users/loredan/Downloads/GeneralCrap/kql/README.md)
@@ -36,6 +37,11 @@ flowchart LR
 1. Start with [log-analytics-cost-playbook.md](/Users/loredan/Downloads/GeneralCrap/docs/log-analytics-cost-playbook.md)
 2. If the table is unfamiliar, use [builtin-table-family-map.md](/Users/loredan/Downloads/GeneralCrap/docs/builtin-table-family-map.md)
 3. If needed, use [31_builtin_table_shape_probe.kql](/Users/loredan/Downloads/GeneralCrap/kql/generic/31_builtin_table_shape_probe.kql) before adapting a drill-down
+
+### App Insights And Storage Hot Tables
+1. [08_selected_tables_90d_ingestion_and_30d_footprint.kql](/Users/loredan/Downloads/GeneralCrap/kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql)
+2. [appinsights-storage-hot-tables-guide.md](/Users/loredan/Downloads/GeneralCrap/docs/appinsights-storage-hot-tables-guide.md)
+3. Use [30_storagebloblogs_requesters_by_cost.kql](/Users/loredan/Downloads/GeneralCrap/kql/platform/30_storagebloblogs_requesters_by_cost.kql) if `StorageBlobLogs` ownership is unclear from caller IP alone
 
 ### Event Table Investigation
 1. [21_event_breakdown.kql](/Users/loredan/Downloads/GeneralCrap/kql/guest-os/21_event_breakdown.kql)

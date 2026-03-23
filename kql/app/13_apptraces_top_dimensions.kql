@@ -1,0 +1,34 @@
+// Manual targeted drill-down for AppTraces ingestion cost drivers.
+// Use this when AppTraces is large and you need the top app role, operation,
+// severity, or resource combinations driving billed volume.
+// Keep this window short on large workspaces. Use core/08 for 30d or 90d totals.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetAppRole = "";
+let TargetOperationName = "";
+let TargetSeverity = "";
+AppTraces
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAppRole) or AppRoleName =~ TargetAppRole
+| where isempty(TargetOperationName) or OperationName =~ TargetOperationName
+| where isempty(TargetSeverity) or tostring(SeverityLevel) =~ TargetSeverity
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    SampleMessage = any(Message)
+  by AppRoleName, OperationName, Severity = tostring(SeverityLevel), ReferencedType, SDKVersion, ResourceId = _ResourceId
+| top TopN by GB desc
+| project
+    AppRoleName,
+    OperationName,
+    Severity,
+    ReferencedType,
+    SDKVersion,
+    ResourceId,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    SampleMessage

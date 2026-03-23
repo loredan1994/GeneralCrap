@@ -1,0 +1,40 @@
+// Manual targeted drill-down for AppExceptions problem patterns and payload size.
+// Use this after 15_appexceptions_top_dimensions.kql to see whether the table
+// is dominated by a small number of exception signatures or large exception details.
+
+let Lookback = 7d;
+let TopN = 30;
+let TargetAppRole = "";
+let TargetExceptionType = "";
+AppExceptions
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAppRole) or AppRoleName =~ TargetAppRole
+| where isempty(TargetExceptionType) or ExceptionType =~ TargetExceptionType
+| extend MessageLen = strlen(tostring(coalesce(Message, "")))
+| extend DetailsLen = strlen(tostring(coalesce(Details, "")))
+| extend InnermostMessageLen = strlen(tostring(coalesce(InnermostMessage, "")))
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    AvgMessageLen = avg(MessageLen),
+    AvgDetailsLen = avg(DetailsLen),
+    AvgInnermostMessageLen = avg(InnermostMessageLen),
+    SampleMessage = any(Message)
+  by AppRoleName, ExceptionType, ProblemId, InnermostType, Method, HandledAt
+| top TopN by GB desc
+| project
+    AppRoleName,
+    ExceptionType,
+    ProblemId,
+    InnermostType,
+    Method,
+    HandledAt,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    AvgMessageLen = round(AvgMessageLen, 1),
+    AvgDetailsLen = round(AvgDetailsLen, 1),
+    AvgInnermostMessageLen = round(AvgInnermostMessageLen, 1),
+    SampleMessage

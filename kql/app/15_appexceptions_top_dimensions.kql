@@ -1,0 +1,34 @@
+// Manual targeted drill-down for AppExceptions ingestion cost drivers.
+// Use this when AppExceptions is large and you need the top app role, problem,
+// exception type, or operation combinations driving billed volume.
+// Keep this window short on large workspaces. Use core/08 for 30d or 90d totals.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetAppRole = "";
+let TargetExceptionType = "";
+let TargetOperationName = "";
+AppExceptions
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAppRole) or AppRoleName =~ TargetAppRole
+| where isempty(TargetExceptionType) or ExceptionType =~ TargetExceptionType
+| where isempty(TargetOperationName) or OperationName =~ TargetOperationName
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    SampleMessage = any(Message)
+  by AppRoleName, OperationName, ExceptionType, ProblemId, HandledAt, ResourceId = _ResourceId
+| top TopN by GB desc
+| project
+    AppRoleName,
+    OperationName,
+    ExceptionType,
+    ProblemId,
+    HandledAt,
+    ResourceId,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    SampleMessage

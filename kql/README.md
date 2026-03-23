@@ -18,8 +18,11 @@ For doc-only navigation, use [docs/README.md](/Users/loredan/Downloads/GeneralCr
 - Fast operator pack in Log Analytics: `core/06_usage_billable_volume_spike_by_table.kql`, `platform/40_activity_failed_control_plane_ops.kql`
 - Fast operator pack in Azure Resource Graph: `resource-graph/60_arg_missing_required_tags.kql`
 - Cross-table outlier hunt: `core/07_top5_largest_records_per_table.kql`
+- 90d/30d hot-table cost view: `core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`
 - Unknown built-in table: `generic/31_builtin_table_shape_probe.kql`, then `generic/30_generic_table_dimension_scan.kql`
 - Azure Functions: `app/10_functionapplogs_top_dimensions.kql`
+- AppTraces and AppExceptions: `app/13_apptraces_top_dimensions.kql`, `app/14_apptraces_repeated_messages.kql`, `app/15_appexceptions_top_dimensions.kql`, `app/16_appexceptions_problem_patterns.kql`
+- StorageBlobLogs: `platform/28_storagebloblogs_top_dimensions.kql`, `platform/29_storagebloblogs_callers_by_cost.kql`, `platform/30_storagebloblogs_requesters_by_cost.kql`
 - Windows VM events: `guest-os/21_event_breakdown.kql`, or `guest-os/34_windowsevent_breakdown.kql` only if `WindowsEvent` exists
 - Event deep dive: `guest-os/40_event_log_level_mix.kql`, `guest-os/38_event_hosts_by_volume.kql`, `guest-os/39_event_id_source_matrix.kql`, `guest-os/35_event_source_breakdown.kql`, `guest-os/36_event_repeated_descriptions.kql`, `guest-os/37_event_trend_by_id.kql`, `guest-os/41_event_payload_outliers.kql`, `guest-os/42_event_low_severity_tuning_candidates.kql`, `guest-os/44_event_spikes_by_signature_vs_baseline.kql`, `guest-os/46_event_security_log_breakdown.kql`
 - Windows event path check: `guest-os/43_windows_event_path_check.kql`
@@ -46,6 +49,7 @@ For doc-only navigation, use [docs/README.md](/Users/loredan/Downloads/GeneralCr
 
 ## Naming
 - `00-05`: cheap-first workspace and weekly triage flow
+- `06-09`: focused cost and footprint helpers
 - `10-19`: app and runtime drill-downs
 - `20-29`: platform, guest OS, and identity drill-downs
 - `30-37`: generic built-in-table helpers

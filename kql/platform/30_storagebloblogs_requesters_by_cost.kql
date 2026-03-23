@@ -1,0 +1,41 @@
+// Manual targeted drill-down for StorageBlobLogs by requester identity.
+// Use this after 28_storagebloblogs_top_dimensions.kql when you need to know
+// which app, object, or user identity is creating the log volume.
+// Examples of related storage tables: StorageFileLogs, StorageQueueLogs, StorageTableLogs.
+
+let Lookback = 30d;
+let TopN = 50;
+let TargetAccountName = "";
+let TargetOperationName = "";
+StorageBlobLogs
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAccountName) or AccountName =~ TargetAccountName
+| where isempty(TargetOperationName) or OperationName =~ TargetOperationName
+| extend StatusCode = tostring(column_ifexists("StatusCode", ""))
+| extend UserAgentHeader = tostring(column_ifexists("UserAgentHeader", ""))
+| extend RequesterObjectId = tostring(column_ifexists("RequesterObjectId", ""))
+| extend RequesterAppId = tostring(column_ifexists("RequesterAppId", ""))
+| extend RequesterUpn = tostring(column_ifexists("RequesterUpn", ""))
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    DistinctUserAgents = dcountif(UserAgentHeader, isnotempty(UserAgentHeader)),
+    SampleUserAgent = any(UserAgentHeader)
+  by AccountName, RequesterObjectId, RequesterAppId, RequesterUpn, AuthenticationType, OperationName, StatusCode, ResourceId = _ResourceId
+| top TopN by GB desc
+| project
+    AccountName,
+    RequesterObjectId,
+    RequesterAppId,
+    RequesterUpn,
+    AuthenticationType,
+    OperationName,
+    StatusCode,
+    ResourceId,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    DistinctUserAgents,
+    SampleUserAgent

@@ -1,0 +1,56 @@
+// Manual cost view for a small set of hot tables.
+// Purpose: compare 90d ingestion history from Usage with the current 30d
+// retained footprint from raw billable records for selected tables.
+// Treat the 30d footprint as a visibility aid, not as a separate long-term
+// retention charge. Confirm actual table-level retention settings before you
+// assume AppExceptions or AppTraces follow the workspace default.
+
+let SelectedTables = dynamic(["AppExceptions", "AppTraces", "StorageBlobLogs"]);
+let IngestionWindow = 90d;
+let FootprintWindow = 30d;
+let UsageView =
+    Usage
+    | where IsBillable == true
+    | where StartTime >= startofday(ago(IngestionWindow)) and EndTime < startofday(now())
+    | where DataType in (SelectedTables)
+    | summarize
+        Ingested90dGB = sum(Quantity) / 1000.0,
+        Ingested30dGB = sumif(Quantity, StartTime >= startofday(ago(FootprintWindow))) / 1000.0,
+        LatestCompletedDayGB = sumif(Quantity, StartTime == startofday(ago(1d))) / 1000.0,
+        ActiveDays90d = dcount(StartTime)
+      by TableName = DataType;
+let FootprintView =
+    union isfuzzy=true
+    (
+        AppExceptions
+        | where TimeGenerated >= ago(FootprintWindow)
+        | where tolower(tostring(_IsBillable)) == "true"
+        | summarize Retained30dGB = sum(_BilledSize) / 1e9, Retained30dRows = count() by TableName = "AppExceptions"
+    ),
+    (
+        AppTraces
+        | where TimeGenerated >= ago(FootprintWindow)
+        | where tolower(tostring(_IsBillable)) == "true"
+        | summarize Retained30dGB = sum(_BilledSize) / 1e9, Retained30dRows = count() by TableName = "AppTraces"
+    ),
+    (
+        StorageBlobLogs
+        | where TimeGenerated >= ago(FootprintWindow)
+        | where tolower(tostring(_IsBillable)) == "true"
+        | summarize Retained30dGB = sum(_BilledSize) / 1e9, Retained30dRows = count() by TableName = "StorageBlobLogs"
+    );
+UsageView
+| join kind=leftouter FootprintView on TableName
+| extend Retained30dGB = coalesce(Retained30dGB, 0.0)
+| extend Retained30dRows = coalesce(Retained30dRows, 0)
+| extend AvgDailyIngest30dGB = round(iff(Ingested30dGB == 0.0, 0.0, Ingested30dGB / 30.0), 3)
+| order by Ingested90dGB desc
+| project
+    TableName,
+    Ingested90dGB = round(Ingested90dGB, 3),
+    Ingested30dGB = round(Ingested30dGB, 3),
+    AvgDailyIngest30dGB,
+    LatestCompletedDayGB = round(LatestCompletedDayGB, 3),
+    Retained30dGB = round(Retained30dGB, 3),
+    Retained30dRows,
+    ActiveDays90d

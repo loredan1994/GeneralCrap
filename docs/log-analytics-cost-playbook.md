@@ -18,11 +18,19 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/core/03_late_arriving_data_check.kql`: Ingestion-day vs event-time analysis for replay and delayed ingestion.
 - `kql/core/04_active_table_inventory.kql`: Cheap active-table inventory from `Usage`, including billable share and likely doc lookup URLs.
 - `kql/core/05_weekly_ingestion_anomalies_by_table.kql`: Automation-safe weekly anomaly scan based on `Usage`.
+- `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`: Focused 90d ingestion plus 30d visible-footprint view for `AppExceptions`, `AppTraces`, and `StorageBlobLogs`.
 - `kql/core/07_top5_largest_records_per_table.kql`: Manual-only top 5 largest billable records per table for short-window outlier detection.
 - `kql/app/10_functionapplogs_top_dimensions.kql`: `FunctionAppLogs` breakdown by app, function, category, and level.
 - `kql/app/11_functionapplogs_repeated_messages.kql`: Normalized repeated message signatures for noisy Functions logs.
 - `kql/app/12_functionapplogs_execution_outcomes.kql`: Function execution outcomes, failures, and duration.
+- `kql/app/13_apptraces_top_dimensions.kql`: `AppTraces` breakdown by app role, operation, severity, and referenced type.
+- `kql/app/14_apptraces_repeated_messages.kql`: Normalized repeated `AppTraces` signatures after narrowing by app role or operation.
+- `kql/app/15_appexceptions_top_dimensions.kql`: `AppExceptions` breakdown by app role, operation, exception type, and problem ID.
+- `kql/app/16_appexceptions_problem_patterns.kql`: `AppExceptions` payload and signature drill-down by problem ID and innermost type.
 - `kql/platform/20_azurediagnostics_breakdown.kql`: `AzureDiagnostics` breakdown by provider, type, category, operation, and resource.
+- `kql/platform/28_storagebloblogs_top_dimensions.kql`: `StorageBlobLogs` breakdown by account, operation, auth type, status, and resource.
+- `kql/platform/29_storagebloblogs_callers_by_cost.kql`: `StorageBlobLogs` caller-IP and request-pattern hotspots.
+- `kql/platform/30_storagebloblogs_requesters_by_cost.kql`: `StorageBlobLogs` requester identity hotspots by object ID, app ID, or UPN.
 - `kql/guest-os/21_event_breakdown.kql`: `Event` breakdown by event log, ID, level, and computer.
 - `kql/guest-os/35_event_source_breakdown.kql`: `Event` breakdown by source, user, host, and event ID.
 - `kql/guest-os/36_event_repeated_descriptions.kql`: Normalized repeated `Event` descriptions to catch chatty guest issues.
@@ -55,6 +63,7 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `docs/triage-notes-template.md`: Investigation worksheet for one suspected issue.
 - `docs/weekly-review-template.md`: Short weekly review artifact for recurring handoff.
 - `docs/event-table-drilldown-guide.md`: Short operator guide for deeper `Event` investigations.
+- `docs/appinsights-storage-hot-tables-guide.md`: Short operator guide for `AppTraces`, `AppExceptions`, and `StorageBlobLogs`.
 - `kql/README.md`: Folder map and quick starting points for the KQL library.
 - `docs/operator-pack-first-wave.md`: Operator-grade Azure Monitor and Resource Graph query pack for platform, governance, and drift questions.
 
@@ -379,6 +388,32 @@ Typical fixes:
 - Reduce trace verbosity.
 - Remove payload-heavy debug logging.
 - Fix the dependency, retry loop, or instrumentation issue causing the volume.
+
+If the hot table is specifically `AppTraces` or `AppExceptions`, use this sequence instead:
+1. `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`
+2. `docs/appinsights-storage-hot-tables-guide.md`
+3. `kql/app/13_apptraces_top_dimensions.kql` and `kql/app/14_apptraces_repeated_messages.kql` for `AppTraces`
+4. `kql/app/15_appexceptions_top_dimensions.kql` and `kql/app/16_appexceptions_problem_patterns.kql` for `AppExceptions`
+
+Use `Ingested90dGB`, `Ingested30dGB`, and `LatestCompletedDayGB` from `Usage` for ingestion-cost decisions. Treat `Retained30dGB` as a visibility metric, not a billing metric.
+
+#### StorageBlobLogs
+Run this sequence:
+1. `kql/core/08_selected_tables_90d_ingestion_and_30d_footprint.kql`
+2. `docs/appinsights-storage-hot-tables-guide.md`
+3. `kql/platform/28_storagebloblogs_top_dimensions.kql`
+4. `kql/platform/29_storagebloblogs_callers_by_cost.kql`
+5. `kql/platform/30_storagebloblogs_requesters_by_cost.kql`
+
+What you are looking for:
+- One account or operation dominating ingestion.
+- One auth pattern or status code dominating the table.
+- One requester identity or client pattern generating most of the volume.
+
+Typical fixes:
+- Remove low-value blob diagnostic categories.
+- Fix one noisy app, identity, or client SDK path.
+- Evaluate Basic Logs or ingestion-time transformations if the access pattern allows it.
 
 #### AzureActivity
 Run `kql/platform/24_azureactivity_breakdown.kql`.

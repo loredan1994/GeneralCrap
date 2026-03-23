@@ -1,0 +1,48 @@
+// Manual targeted drill-down for StorageBlobLogs by caller and request pattern.
+// Use this after 28_storagebloblogs_top_dimensions.kql when you need to know
+// which caller IPs or request patterns are creating the log volume.
+// Keep this window short on large workspaces. Use core/08 for 30d or 90d totals.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetAccountName = "";
+let TargetOperationName = "";
+StorageBlobLogs
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAccountName) or AccountName =~ TargetAccountName
+| where isempty(TargetOperationName) or OperationName =~ TargetOperationName
+| extend StatusCode = tostring(column_ifexists("StatusCode", ""))
+| extend Uri = tostring(column_ifexists("Uri", ""))
+| extend RequesterObjectId = tostring(column_ifexists("RequesterObjectId", ""))
+| extend RequesterAppId = tostring(column_ifexists("RequesterAppId", ""))
+| extend RequesterUpn = tostring(column_ifexists("RequesterUpn", ""))
+| extend UserAgentHeader = substring(tostring(column_ifexists("UserAgentHeader", "")), 0, 120)
+| extend ObjectKey = tostring(column_ifexists("ObjectKey", ""))
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    P95DurationMs = percentile(DurationMs, 95),
+    DistinctUris = dcountif(Uri, isnotempty(Uri)),
+    SampleUserAgent = any(UserAgentHeader),
+    SampleObjectKey = any(ObjectKey)
+  by AccountName, CallerIpAddress, RequesterObjectId, RequesterAppId, RequesterUpn, AuthenticationType, OperationName, StatusCode, ResourceId = _ResourceId
+| top TopN by GB desc
+| project
+    AccountName,
+    CallerIpAddress,
+    RequesterObjectId,
+    RequesterAppId,
+    RequesterUpn,
+    AuthenticationType,
+    OperationName,
+    StatusCode,
+    ResourceId,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    P95DurationMs = round(P95DurationMs, 1),
+    DistinctUris,
+    SampleUserAgent,
+    SampleObjectKey

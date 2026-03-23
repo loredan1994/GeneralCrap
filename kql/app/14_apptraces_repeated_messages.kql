@@ -1,0 +1,35 @@
+// Manual targeted drill-down for repeated AppTraces message signatures.
+// Use this after 13_apptraces_top_dimensions.kql and narrow by AppRoleName or
+// OperationName first on larger workspaces.
+
+let Lookback = 1d;
+let TopN = 30;
+let MaxMessageLength = 240;
+let TargetAppRole = "";
+let TargetOperationName = "";
+let TargetSeverity = "";
+AppTraces
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAppRole) or AppRoleName =~ TargetAppRole
+| where isempty(TargetOperationName) or OperationName =~ TargetOperationName
+| where isempty(TargetSeverity) or tostring(SeverityLevel) =~ TargetSeverity
+| project AppRoleName, OperationName, Severity = tostring(SeverityLevel), _BilledSize, RawMessage = substring(tostring(coalesce(Message, "")), 0, MaxMessageLength)
+| where isnotempty(RawMessage)
+| extend NormalizedMessage = replace_regex(RawMessage, @"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}", "<guid>")
+| extend NormalizedMessage = replace_regex(NormalizedMessage, @"\b\d+\b", "<n>")
+| extend NormalizedMessage = replace_regex(NormalizedMessage, @"https?://\S+", "<url>")
+| summarize hint.shufflekey=NormalizedMessage
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    SampleMessage = any(RawMessage)
+  by AppRoleName, OperationName, Severity, NormalizedMessage
+| top TopN by GB desc
+| project
+    AppRoleName,
+    OperationName,
+    Severity,
+    GB = round(GB, 3),
+    Rows,
+    NormalizedMessage,
+    SampleMessage

@@ -1,0 +1,40 @@
+// Manual targeted drill-down for StorageBlobLogs ingestion cost drivers.
+// Use this when StorageBlobLogs is large and you need the top account,
+// operation, auth type, status, or resource combinations driving volume.
+// Keep this window short on large workspaces. Use core/08 for 30d or 90d totals.
+
+let Lookback = 7d;
+let TopN = 50;
+let TargetAccountName = "";
+let TargetOperationName = "";
+let TargetAuthenticationType = "";
+StorageBlobLogs
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetAccountName) or AccountName =~ TargetAccountName
+| where isempty(TargetOperationName) or OperationName =~ TargetOperationName
+| where isempty(TargetAuthenticationType) or AuthenticationType =~ TargetAuthenticationType
+| extend StatusCode = tostring(column_ifexists("StatusCode", ""))
+| extend StatusText = tostring(column_ifexists("StatusText", ""))
+| extend Uri = tostring(column_ifexists("Uri", ""))
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    DistinctCallers = dcount(CallerIpAddress),
+    SampleUri = any(Uri)
+  by AccountName, OperationName, AuthenticationType, StatusCode, StatusText, Category, ResourceId = _ResourceId
+| top TopN by GB desc
+| project
+    AccountName,
+    OperationName,
+    AuthenticationType,
+    StatusCode,
+    StatusText,
+    Category,
+    ResourceId,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    DistinctCallers,
+    SampleUri
