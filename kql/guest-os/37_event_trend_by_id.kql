@@ -1,0 +1,22 @@
+// Manual targeted trend query for Event bursts over time.
+// Use this after identifying a noisy EventID or Source to see whether the issue
+// is steady-state, bursty, or tied to a specific host.
+
+let Lookback = 3d;
+let Bucket = 1h;
+let TargetComputer = "";
+let TargetEventLog = "";
+let TargetSource = "";
+let TargetEventID = int(-1);
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| where isempty(TargetSource) or Source =~ TargetSource
+| where TargetEventID == -1 or EventID == TargetEventID
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9
+  by bin(TimeGenerated, Bucket), EventLog, EventID, EventLevelName, Source, Computer
+| order by TimeGenerated asc, GB desc

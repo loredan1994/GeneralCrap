@@ -17,6 +17,7 @@
 - Unknown built-in table: `generic/31_builtin_table_shape_probe.kql`, then `generic/30_generic_table_dimension_scan.kql`
 - Azure Functions: `app/10_functionapplogs_top_dimensions.kql`
 - Windows VM events: `guest-os/21_event_breakdown.kql` or `guest-os/34_windowsevent_breakdown.kql`
+- Event deep dive: `guest-os/35_event_source_breakdown.kql`, `guest-os/36_event_repeated_descriptions.kql`, `guest-os/37_event_trend_by_id.kql`
 - Identity and security: `security/28_signinlogs_breakdown.kql`, `security/29_auditlogs_breakdown.kql`, `security/33_securityevent_breakdown.kql`
 
 ## Query Surfaces

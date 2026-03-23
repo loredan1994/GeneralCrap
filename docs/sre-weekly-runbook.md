@@ -47,6 +47,7 @@ Use these only after a hot table or resource has already been identified:
 - Azure Functions and App Service runtime logs: `kql/app/10_*`, `kql/app/11_*`, `kql/app/12_*`
 - Azure resource logs: `kql/platform/20_azurediagnostics_breakdown.kql` or `kql/generic/30_generic_table_dimension_scan.kql` for resource-specific tables
 - Windows guest OS logs, classic `Event` table: `kql/guest-os/21_event_breakdown.kql`
+- Event deep dive after a hot classic Event table is found: `kql/guest-os/35_event_source_breakdown.kql`, `kql/guest-os/36_event_repeated_descriptions.kql`, `kql/guest-os/37_event_trend_by_id.kql`
 - Windows guest OS logs, AMA or DCR `WindowsEvent` table: `kql/guest-os/34_windowsevent_breakdown.kql`
 - Windows security audit events: `kql/security/33_securityevent_breakdown.kql`
 - Linux guest OS logs: `kql/guest-os/22_syslog_breakdown.kql`

@@ -1,0 +1,35 @@
+// Manual targeted drill-down for repeated Event descriptions.
+// Use this to spot chatty event signatures, retry loops, or repetitive guest issues.
+
+let Lookback = 3d;
+let TopN = 50;
+let TargetComputer = "";
+let TargetEventLog = "";
+let TargetSource = "";
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| where isempty(TargetSource) or Source =~ TargetSource
+| extend Description = coalesce(RenderedDescription, Message, "")
+| extend Description = replace_regex(Description, @"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}", "<guid>")
+| extend Description = replace_regex(Description, @"\b\d+\b", "<n>")
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    SampleDescription = any(RenderedDescription)
+  by EventLog, EventID, EventLevelName, Source, Computer, Description
+| top TopN by GB desc
+| project
+    EventLog,
+    EventID,
+    EventLevelName,
+    Source,
+    Computer,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    Description,
+    SampleDescription

@@ -1,0 +1,35 @@
+// Manual targeted drill-down for Event cost drivers by source and user.
+// Use this after 21_event_breakdown.kql when you need to know which event source,
+// user, or host combination is producing most of the table volume.
+
+let Lookback = 3d;
+let TopN = 50;
+let TargetComputer = "";
+let TargetEventLog = "";
+let TargetSource = "";
+let TargetEventID = int(-1);
+Event
+| where TimeGenerated >= ago(Lookback)
+| where tolower(tostring(_IsBillable)) == "true"
+| where isempty(TargetComputer) or Computer =~ TargetComputer
+| where isempty(TargetEventLog) or EventLog =~ TargetEventLog
+| where isempty(TargetSource) or Source =~ TargetSource
+| where TargetEventID == -1 or EventID == TargetEventID
+| summarize
+    Rows = count(),
+    GB = sum(_BilledSize) / 1e9,
+    AvgKB = avg(_BilledSize) / 1024.0,
+    SampleDescription = any(RenderedDescription)
+  by EventLog, EventID, EventLevelName, Source, UserName, Computer
+| top TopN by GB desc
+| project
+    EventLog,
+    EventID,
+    EventLevelName,
+    Source,
+    UserName,
+    Computer,
+    GB = round(GB, 3),
+    Rows,
+    AvgKB = round(AvgKB, 2),
+    SampleDescription

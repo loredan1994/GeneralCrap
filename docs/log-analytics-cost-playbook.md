@@ -24,6 +24,9 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/app/12_functionapplogs_execution_outcomes.kql`: Function execution outcomes, failures, and duration.
 - `kql/platform/20_azurediagnostics_breakdown.kql`: `AzureDiagnostics` breakdown by provider, type, category, operation, and resource.
 - `kql/guest-os/21_event_breakdown.kql`: `Event` breakdown by event log, ID, level, and computer.
+- `kql/guest-os/35_event_source_breakdown.kql`: `Event` breakdown by source, user, host, and event ID.
+- `kql/guest-os/36_event_repeated_descriptions.kql`: Normalized repeated `Event` descriptions to catch chatty guest issues.
+- `kql/guest-os/37_event_trend_by_id.kql`: `Event` bursts over time by event ID, source, and computer.
 - `kql/guest-os/22_syslog_breakdown.kql`: `Syslog` breakdown by computer, facility, severity, and process.
 - `kql/app/23_applicationinsights_builtin_breakdown.kql`: Workspace-based Application Insights and OTel table breakdown.
 - `kql/platform/24_azureactivity_breakdown.kql`: `AzureActivity` breakdown by caller, provider, operation, and status.
@@ -256,6 +259,11 @@ Typical fixes:
 - Filter the event set at collection time if those IDs are not operationally useful.
 - Fix the host or application generating the repeated events.
 - Remove redundant event sources from collection rules.
+
+For deeper Event investigations:
+1. Run `kql/guest-os/35_event_source_breakdown.kql` to see which source, user, or computer is producing the cost.
+2. Run `kql/guest-os/36_event_repeated_descriptions.kql` to identify repeated event signatures after normalizing numbers and GUIDs.
+3. Run `kql/guest-os/37_event_trend_by_id.kql` to see whether the issue is bursty or steady-state.
 
 #### WindowsEvent
 Run `kql/guest-os/34_windowsevent_breakdown.kql`.
