@@ -13,6 +13,7 @@
 ## Recommended Starting Points
 - Weekly review: `core/04_active_table_inventory.kql`, `core/00_workspace_usage_by_table.kql`, `core/05_weekly_ingestion_anomalies_by_table.kql`
 - Fast operator pack: `core/06_usage_billable_volume_spike_by_table.kql`, `platform/40_activity_failed_control_plane_ops.kql`, `resource-graph/60_arg_missing_required_tags.kql`
+- Cross-table outlier hunt: `core/07_top5_largest_records_per_table.kql`
 - Unknown built-in table: `generic/31_builtin_table_shape_probe.kql`, then `generic/30_generic_table_dimension_scan.kql`
 - Azure Functions: `app/10_functionapplogs_top_dimensions.kql`
 - Windows VM events: `guest-os/21_event_breakdown.kql` or `guest-os/34_windowsevent_breakdown.kql`

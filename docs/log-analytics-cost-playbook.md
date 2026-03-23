@@ -18,6 +18,7 @@ It is optimized for recurring triage rather than a one-off investigation:
 - `kql/core/03_late_arriving_data_check.kql`: Ingestion-day vs event-time analysis for replay and delayed ingestion.
 - `kql/core/04_active_table_inventory.kql`: Cheap active-table inventory from `Usage`, including billable share and likely doc lookup URLs.
 - `kql/core/05_weekly_ingestion_anomalies_by_table.kql`: Automation-safe weekly anomaly scan based on `Usage`.
+- `kql/core/07_top5_largest_records_per_table.kql`: Manual-only top 5 largest billable records per table for short-window outlier detection.
 - `kql/app/10_functionapplogs_top_dimensions.kql`: `FunctionAppLogs` breakdown by app, function, category, and level.
 - `kql/app/11_functionapplogs_repeated_messages.kql`: Normalized repeated message signatures for noisy Functions logs.
 - `kql/app/12_functionapplogs_execution_outcomes.kql`: Function execution outcomes, failures, and duration.
@@ -133,6 +134,7 @@ Use these only for manual triage after a hot table or hot resource is already kn
 - `kql/core/01_top3_consumers_per_table.kql`
 - `kql/core/02_cross_table_resource_hotspots.kql`
 - `kql/core/03_late_arriving_data_check.kql`
+- `kql/core/07_top5_largest_records_per_table.kql`
 - `kql/generic/30_generic_table_dimension_scan.kql`
 - the table-specific drill-down queries
 
@@ -177,6 +179,16 @@ Interpretation rules:
 - If one consumer is at least 25% of a table, triage that consumer first.
 - If a table has multiple consumers with similar percentages, the issue is likely a shared platform setting, collection policy, or broad workload growth.
 - If the same `_ResourceId` appears across multiple tables, pivot to `kql/core/02_cross_table_resource_hotspots.kql`.
+
+### When You Need Largest Individual Records
+Run `kql/core/07_top5_largest_records_per_table.kql`.
+
+Use this when:
+- table totals look high but you suspect a small number of oversized events
+- one app may be dumping payloads, stack traces, or verbose structured blobs
+- you want a quick outlier view before building a table-specific drill-down
+
+Keep the window short. This query is for manual investigation only.
 
 ### Step 3: Drill Down by Table Type
 

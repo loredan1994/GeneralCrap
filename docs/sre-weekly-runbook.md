@@ -33,6 +33,7 @@ Use these only after a hot table or resource has already been identified:
 - `kql/core/01_top3_consumers_per_table.kql`
 - `kql/core/02_cross_table_resource_hotspots.kql`
 - `kql/core/03_late_arriving_data_check.kql`
+- `kql/core/07_top5_largest_records_per_table.kql`
 - `kql/generic/30_generic_table_dimension_scan.kql`
 - the table-specific drill-down files under `kql/app`, `kql/platform`, `kql/guest-os`, and `kql/security`
 
